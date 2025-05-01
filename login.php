@@ -4,65 +4,7 @@ date_default_timezone_set('America/Sao_Paulo');
 require_once 'includes/db_connection.php';  
 require_once 'includes/functions.php';  
 require_once 'includes/log_functions.php';  
-
-// Código para fazer o git pull automaticamente - versão melhorada  
-$atualizacao_git = '';  
-$debug_info = '';  
-
-try {  
-    // Verifica se o Git está instalado  
-    $git_version = shell_exec('git --version 2>&1');  
-    if (!$git_version || strpos($git_version, 'git version') === false) {  
-        $atualizacao_git = "Erro: Git não está instalado ou não está acessível.";  
-        $debug_info .= "Git version: " . ($git_version ?: 'Não disponível') . "\n";  
-    } else {  
-        // Obtém o diretório raiz do projeto  
-        $root_dir = dirname(__FILE__);  
-        $debug_info .= "Diretório raiz: " . $root_dir . "\n";  
-        
-        // Configura o diretório como seguro (necessário em alguns ambientes)  
-        shell_exec('git config --global --add safe.directory "' . $root_dir . '" 2>&1');  
-        
-        // Muda para o diretório do projeto antes de executar os comandos git  
-        chdir($root_dir);  
-        $debug_info .= "Diretório atual após chdir: " . getcwd() . "\n";  
-        
-        // Verifica se é um repositório git  
-        $is_git_repo = shell_exec('git rev-parse --is-inside-work-tree 2>&1');  
-        if (trim($is_git_repo) !== 'true') {  
-            $atualizacao_git = "Erro: Diretório não é um repositório Git válido.";  
-            $debug_info .= "Verificação de repositório: " . $is_git_repo . "\n";  
-        } else {  
-            // Verifica branch atual  
-            $current_branch = trim(shell_exec('git branch --show-current 2>&1'));  
-            $debug_info .= "Branch atual: " . $current_branch . "\n";  
-            
-            // Executa o comando git pull  
-            $output = shell_exec('git pull 2>&1');  
-            $debug_info .= "Resultado do pull: " . $output . "\n";  
-            
-            // Verifica o resultado da execução  
-            if (strpos($output, 'Already up to date') !== false || strpos($output, 'Already up-to-date') !== false) {  
-                $atualizacao_git = "Sistema atualizado. Nenhuma atualização pendente.";  
-            } elseif (strpos($output, 'Updating') !== false) {  
-                $atualizacao_git = "Atualização do código aplicada com sucesso.";  
-            } elseif (strpos($output, 'fatal:') !== false) {  
-                $atualizacao_git = "Erro Git: " . $output;  
-            } else {  
-                $atualizacao_git = "Resultado da atualização: " . $output;  
-            }  
-        }  
-    }  
-} catch (Exception $e) {  
-    $atualizacao_git = "Exceção ao executar atualização: " . $e->getMessage();  
-    $debug_info .= "Exception: " . $e->getMessage() . "\n";  
-}  
-
-// Registrar a tentativa de atualização e debug no log  
-error_log("Atualização Git: " . $atualizacao_git);  
-error_log("Debug Git: " . $debug_info);  
-
-// Se já estiver logado, redirecione para o painel  
+ 
 if (isset($_SESSION['usuario_id'])) {  
     header("Location: painel.php");  
     exit;  
@@ -73,7 +15,7 @@ $mensagem = '';
 // Processar o login  
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {  
     $email = isset($_POST['email']) ? sanitize($_POST['email']) : '';  
-    $senha = isset($_POST['senha']) ? $_POST['senha'] : ''; // Não sanitizar a senha antes da verificação  
+    $senha = isset($_POST['senha']) ? $_POST['senha'] : '';  
     
     if (empty($email) || empty($senha)) {  
         $mensagem = "Por favor, preencha todos os campos.";  
@@ -92,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Login bem-sucedido  
                     $_SESSION['usuario_id'] = $usuario['id'];  
                     $_SESSION['usuario_nome'] = $usuario['nome'];  
-                    $_SESSION['nome'] = $usuario['nome']; // Adicionado para compatibilidade com novos scripts  
+                    $_SESSION['nome'] = $usuario['nome'];
                     $_SESSION['usuario_tipo'] = $usuario['tipo'];  
                     
                     // Log de login - com parâmetros corretos  
@@ -116,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }  
     }  
 }   
-?>
+?>  
 
 <!DOCTYPE html>  
 <html lang="pt-BR" data-bs-theme="light">  
@@ -330,16 +272,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }  
         }  
         
-        // Verificar se houve logout bem-sucedido  
-        if (params.has('logout')) {  
-            Swal.fire({  
-                title: 'Logout realizado',  
-                text: 'Você saiu do sistema com sucesso.',  
-                icon: 'success',  
-                timer: 3000,  
-                showConfirmButton: false  
-            });  
-        }  
+        // // Verificar se houve logout bem-sucedido  
+        // if (params.has('logout')) {  
+        //     Swal.fire({  
+        //         title: 'Logout realizado',  
+        //         text: 'Você saiu do sistema com sucesso.',  
+        //         icon: 'success',  
+        //         timer: 3000,  
+        //         showConfirmButton: false  
+        //     });  
+        // }  
 
         // Função para mostrar/esconder senha  
         document.querySelectorAll('.password-toggle').forEach(button => {  
