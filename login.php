@@ -1,6 +1,6 @@
 <?php  
 session_start();  
-date_default_timezone_set('America/Sao_Paulo'); 
+date_default_timezone_set('America/Sao_Paulo');   
 require_once 'includes/db_connection.php';  
 require_once 'includes/functions.php';  
 require_once 'includes/log_functions.php';  
@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>  
 
 <!DOCTYPE html>  
-<html lang="pt-BR">  
+<html lang="pt-BR" data-bs-theme="light">  
 <head>  
     <meta charset="UTF-8">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0">  
@@ -71,16 +71,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.min.css">  
     <link rel="stylesheet" href="css/style.css">  
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>  
+    <style>  
+        .theme-toggle {  
+            position: absolute;  
+            top: 15px;  
+            right: 15px;  
+            z-index: 1000;  
+        }  
+        
+        .logo-container {  
+            width: 100px;  
+            height: 100px;  
+            margin: 0 auto 20px;  
+            display: flex;  
+            justify-content: center;  
+            align-items: center;  
+        }  
+        
+        .logo-container img {  
+            max-width: 100%;  
+            max-height: 100%;  
+        }  
+        
+        /* Estilos para o modo escuro */  
+        html[data-bs-theme="dark"] {  
+            --bs-body-bg: #121212;  
+            --bs-body-color: #f8f9fa;  
+        }  
+        
+        html[data-bs-theme="dark"] body {  
+            background-color: #121212;  
+            color: #f8f9fa;  
+        }  
+        
+        html[data-bs-theme="dark"] .card {  
+            background-color: #1e1e1e;  
+            color: #f8f9fa;  
+            border-color: #2c2c2c;  
+        }  
+        
+        html[data-bs-theme="dark"] .form-control {  
+            background-color: #2c2c2c;  
+            color: #f8f9fa;  
+            border-color: #444;  
+        }  
+        
+        html[data-bs-theme="dark"] .form-control:focus {  
+            background-color: #2c2c2c;  
+            color: #f8f9fa;  
+        }  
+        
+        html[data-bs-theme="dark"] .text-muted {  
+            color: #adb5bd !important;  
+        }  
+        
+        html[data-bs-theme="dark"] .btn-outline-secondary {  
+            color: #adb5bd;  
+            border-color: #6c757d;  
+        }  
+        
+        html[data-bs-theme="dark"] .theme-toggle {  
+            color: #f8f9fa;  
+            background-color: transparent;  
+            border-color: #6c757d;  
+        }  
+        
+        html[data-bs-theme="dark"] .alert-danger {  
+            background-color: #2c1215;  
+            color: #ea868f;  
+            border-color: #842029;  
+        }  
+    </style>  
 </head>  
-<body class="bg-light">  
+<body>  
+    <!-- Botão toggle de tema -->  
+    <button class="btn btn-sm theme-toggle" id="themeToggle" title="Alternar tema">  
+        <i data-feather="moon" id="darkIcon"></i>  
+        <i data-feather="sun" id="lightIcon" style="display: none;"></i>  
+    </button>  
+    
     <div class="container">  
         <div class="row justify-content-center mt-5">  
             <div class="col-md-6 col-lg-4">  
                 <div class="card shadow">  
                     <div class="card-body p-5">  
                         <div class="text-center mb-4">  
-                            <h2 class="fw-bold text-primary">Xuxuzinho</h2>  
-                            <p class="text-muted">Sistema de Gestão Cartorial</p>  
+                            <div class="logo-container">  
+                                <img src="images/favicon.png" alt="Xuxuzinho Logo" class="img-fluid">  
+                            </div>  
+                            <h4 class="text-center mb-4">Acesso ao Sistema</h4>   
                         </div>  
                         
                         <?php if (!empty($mensagem)): ?>  
@@ -117,6 +196,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.min.js"></script>  
     <script>  
         feather.replace();  
+        
+        // Função para alternar entre temas claro e escuro  
+        document.getElementById('themeToggle').addEventListener('click', function() {  
+            const html = document.documentElement;  
+            const darkIcon = document.getElementById('darkIcon');  
+            const lightIcon = document.getElementById('lightIcon');  
+            
+            if (html.getAttribute('data-bs-theme') === 'dark') {  
+                html.setAttribute('data-bs-theme', 'light');  
+                darkIcon.style.display = 'block';  
+                lightIcon.style.display = 'none';  
+                localStorage.setItem('theme', 'light');  
+            } else {  
+                html.setAttribute('data-bs-theme', 'dark');  
+                darkIcon.style.display = 'none';  
+                lightIcon.style.display = 'block';  
+                localStorage.setItem('theme', 'dark');  
+            }  
+        });  
+        
+        // Verificar tema salvo no localStorage ao carregar a página  
+        document.addEventListener('DOMContentLoaded', function() {  
+            const savedTheme = localStorage.getItem('theme');  
+            const html = document.documentElement;  
+            const darkIcon = document.getElementById('darkIcon');  
+            const lightIcon = document.getElementById('lightIcon');  
+            
+            if (savedTheme === 'dark') {  
+                html.setAttribute('data-bs-theme', 'dark');  
+                darkIcon.style.display = 'none';  
+                lightIcon.style.display = 'block';  
+            }  
+            
+            // Aplicar o tema imediatamente  
+            feather.replace();  
+        });  
         
         // Verificar parâmetros na URL  
         const params = new URLSearchParams(window.location.search);  
