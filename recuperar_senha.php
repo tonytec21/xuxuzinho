@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Recuperar Senha - Xuxuzinho</title>  
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">  
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.20/dist/sweetalert2.min.css">  
-    <link rel="stylesheet" href="css/style.css">  
+    <?php include(__DIR__ . '/css/style.php');?>  
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>  
     <style>  
         .theme-toggle {  
