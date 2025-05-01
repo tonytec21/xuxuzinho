@@ -1,0 +1,3 @@
+1. Ative a extensão: Agora você precisa ativar a extensão no php.ini. No Laragon, você pode fazer isso facilmente clicando com o botão direito no ícone do Laragon na bandeja do sistema, escolhendo "PHP" e depois "php.ini". Isso abrirá o arquivo de configuração do PHP em um editor de texto. Procure por "Dynamic Extensions" e adicione a seguinte linha extension=imagick no final da seção.
+
+extension=php_imagick.dll
