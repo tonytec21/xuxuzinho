@@ -1,6 +1,20 @@
 <?php  
-session_start();  
-date_default_timezone_set('America/Sao_Paulo');   
+session_start();
+date_default_timezone_set('America/Sao_Paulo');  
+shell_exec('git config --global --add safe.directory C:/xampp/htdocs/xuxuzinho');
+
+// Executa o comando git pull
+$output = shell_exec('git pull 2>&1');
+
+// Verifica o resultado da execução
+if (strpos($output, 'Already up to date.') !== false) {
+    $mensagem = "Sistema atualizado. Nenhuma atualização pendente.";
+} elseif (strpos($output, 'Updating') !== false) {
+    $mensagem = "Atualização do código aplicada com sucesso.";
+} else {
+    $mensagem = "Erro ao executar a atualização via git: " . $output;
+}
+ 
 require_once 'includes/db_connection.php';  
 require_once 'includes/functions.php';  
 require_once 'includes/log_functions.php';  
