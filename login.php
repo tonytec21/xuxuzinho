@@ -1,23 +1,31 @@
 <?php  
-session_start();
-date_default_timezone_set('America/Sao_Paulo');  
-shell_exec('git config --global --add safe.directory C:/xampp/htdocs/xuxuzinho');
-
-// Executa o comando git pull
-$output = shell_exec('git pull 2>&1');
-
-// Verifica o resultado da execução
-if (strpos($output, 'Already up to date.') !== false) {
-    $mensagem = "Sistema atualizado. Nenhuma atualização pendente.";
-} elseif (strpos($output, 'Updating') !== false) {
-    $mensagem = "Atualização do código aplicada com sucesso.";
-} else {
-    $mensagem = "Erro ao executar a atualização via git: " . $output;
-}
- 
+session_start();  
+date_default_timezone_set('America/Sao_Paulo');   
 require_once 'includes/db_connection.php';  
 require_once 'includes/functions.php';  
 require_once 'includes/log_functions.php';  
+
+// Código para fazer o git pull automaticamente  
+$atualizacao_git = '';  
+if (PHP_OS_FAMILY !== 'Windows' || true) { // Executar em qualquer sistema operacional  
+    // Configurar o diretório como seguro (necessário em alguns ambientes)  
+    shell_exec('git config --global --add safe.directory C:/xampp/htdocs/xuxuzinho');  
+
+    // Executa o comando git pull  
+    $output = shell_exec('git pull 2>&1');  
+
+    // Verifica o resultado da execução  
+    if (strpos($output, 'Already up to date.') !== false) {  
+        $atualizacao_git = "Sistema atualizado. Nenhuma atualização pendente.";  
+    } elseif (strpos($output, 'Updating') !== false) {  
+        $atualizacao_git = "Atualização do código aplicada com sucesso.";  
+    } else {  
+        $atualizacao_git = "Erro ao executar a atualização via git: " . $output;  
+    }  
+    
+    // Registrar a tentativa de atualização no log  
+    error_log("Atualização Git: " . $atualizacao_git);  
+}  
 
 // Se já estiver logado, redirecione para o painel  
 if (isset($_SESSION['usuario_id'])) {  
@@ -73,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }  
     }  
 }   
-?>  
+?>
 
 <!DOCTYPE html>  
 <html lang="pt-BR" data-bs-theme="light">  
