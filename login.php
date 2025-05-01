@@ -5,27 +5,62 @@ require_once 'includes/db_connection.php';
 require_once 'includes/functions.php';  
 require_once 'includes/log_functions.php';  
 
-// Código para fazer o git pull automaticamente  
+// Código para fazer o git pull automaticamente - versão melhorada  
 $atualizacao_git = '';  
-if (PHP_OS_FAMILY !== 'Windows' || true) { // Executar em qualquer sistema operacional  
-    // Configurar o diretório como seguro (necessário em alguns ambientes)  
-    shell_exec('git config --global --add safe.directory C:/xampp/htdocs/xuxuzinho');  
+$debug_info = '';  
 
-    // Executa o comando git pull  
-    $output = shell_exec('git pull 2>&1');  
-
-    // Verifica o resultado da execução  
-    if (strpos($output, 'Already up to date.') !== false) {  
-        $atualizacao_git = "Sistema atualizado. Nenhuma atualização pendente.";  
-    } elseif (strpos($output, 'Updating') !== false) {  
-        $atualizacao_git = "Atualização do código aplicada com sucesso.";  
+try {  
+    // Verifica se o Git está instalado  
+    $git_version = shell_exec('git --version 2>&1');  
+    if (!$git_version || strpos($git_version, 'git version') === false) {  
+        $atualizacao_git = "Erro: Git não está instalado ou não está acessível.";  
+        $debug_info .= "Git version: " . ($git_version ?: 'Não disponível') . "\n";  
     } else {  
-        $atualizacao_git = "Erro ao executar a atualização via git: " . $output;  
+        // Obtém o diretório raiz do projeto  
+        $root_dir = dirname(__FILE__);  
+        $debug_info .= "Diretório raiz: " . $root_dir . "\n";  
+        
+        // Configura o diretório como seguro (necessário em alguns ambientes)  
+        shell_exec('git config --global --add safe.directory "' . $root_dir . '" 2>&1');  
+        
+        // Muda para o diretório do projeto antes de executar os comandos git  
+        chdir($root_dir);  
+        $debug_info .= "Diretório atual após chdir: " . getcwd() . "\n";  
+        
+        // Verifica se é um repositório git  
+        $is_git_repo = shell_exec('git rev-parse --is-inside-work-tree 2>&1');  
+        if (trim($is_git_repo) !== 'true') {  
+            $atualizacao_git = "Erro: Diretório não é um repositório Git válido.";  
+            $debug_info .= "Verificação de repositório: " . $is_git_repo . "\n";  
+        } else {  
+            // Verifica branch atual  
+            $current_branch = trim(shell_exec('git branch --show-current 2>&1'));  
+            $debug_info .= "Branch atual: " . $current_branch . "\n";  
+            
+            // Executa o comando git pull  
+            $output = shell_exec('git pull 2>&1');  
+            $debug_info .= "Resultado do pull: " . $output . "\n";  
+            
+            // Verifica o resultado da execução  
+            if (strpos($output, 'Already up to date') !== false || strpos($output, 'Already up-to-date') !== false) {  
+                $atualizacao_git = "Sistema atualizado. Nenhuma atualização pendente.";  
+            } elseif (strpos($output, 'Updating') !== false) {  
+                $atualizacao_git = "Atualização do código aplicada com sucesso.";  
+            } elseif (strpos($output, 'fatal:') !== false) {  
+                $atualizacao_git = "Erro Git: " . $output;  
+            } else {  
+                $atualizacao_git = "Resultado da atualização: " . $output;  
+            }  
+        }  
     }  
-    
-    // Registrar a tentativa de atualização no log  
-    error_log("Atualização Git: " . $atualizacao_git);  
+} catch (Exception $e) {  
+    $atualizacao_git = "Exceção ao executar atualização: " . $e->getMessage();  
+    $debug_info .= "Exception: " . $e->getMessage() . "\n";  
 }  
+
+// Registrar a tentativa de atualização e debug no log  
+error_log("Atualização Git: " . $atualizacao_git);  
+error_log("Debug Git: " . $debug_info);  
 
 // Se já estiver logado, redirecione para o painel  
 if (isset($_SESSION['usuario_id'])) {  
