@@ -142,6 +142,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: #ea868f;  
             border-color: #842029;  
         }  
+
+        .password-toggle {  
+            border-top-right-radius: 0.25rem;  
+            border-bottom-right-radius: 0.25rem;  
+        }  
+
+        html[data-bs-theme="dark"] .password-toggle {  
+            color: #f8f9fa;  
+            background-color: #2c2c2c;  
+            border-color: #444;  
+        }  
+
+        html[data-bs-theme="dark"] .password-toggle:hover {  
+            background-color: #3c3c3c;  
+        }
     </style>  
 </head>  
 <body>  
@@ -174,8 +189,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>  
                             <div class="mb-3">  
                                 <label for="senha" class="form-label">Senha</label>  
-                                <input type="password" class="form-control" id="senha" name="senha" required>  
-                            </div>  
+                                <div class="input-group">  
+                                    <input type="password" class="form-control" id="senha" name="senha" required>  
+                                    <button class="btn btn-outline-secondary password-toggle" type="button" data-target="senha">  
+                                        <i data-feather="eye" class="show-password"></i>  
+                                        <i data-feather="eye-off" class="hide-password" style="display: none;"></i>  
+                                    </button>  
+                                </div>  
+                            </div> 
                             <div class="d-grid gap-2">  
                                 <button type="submit" class="btn btn-primary">Entrar</button>  
                             </div>  
@@ -262,6 +283,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 showConfirmButton: false  
             });  
         }  
+
+        // Função para mostrar/esconder senha  
+        document.querySelectorAll('.password-toggle').forEach(button => {  
+            button.addEventListener('click', function() {  
+                const targetId = this.getAttribute('data-target');  
+                const passwordInput = document.getElementById(targetId);  
+                const showIcon = this.querySelector('.show-password');  
+                const hideIcon = this.querySelector('.hide-password');  
+                
+                if (passwordInput.type === 'password') {  
+                    passwordInput.type = 'text';  
+                    showIcon.style.display = 'none';  
+                    hideIcon.style.display = 'block';  
+                } else {  
+                    passwordInput.type = 'password';  
+                    showIcon.style.display = 'block';  
+                    hideIcon.style.display = 'none';  
+                }  
+                
+                // Atualizar ícones Feather após a mudança  
+                feather.replace();  
+            });  
+        });
     </script>  
 </body>  
 </html>
