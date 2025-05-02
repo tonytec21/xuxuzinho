@@ -416,7 +416,7 @@ include 'includes/header.php';
                     <?php else: ?>  
                         <div class="text-center py-4">  
                             <i data-feather="file-text" style="width: 48px; height: 48px; opacity: 0.2;"></i>  
-                            <p class="mt-2 text-muted">Você ainda não cadastrou nenhum selo.</p>  
+                            <p class="mt-2 text-muted">Nenhum resultado.</p>  
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
                                 <i data-feather="plus" class="me-1" style="width: 14px; height: 14px;"></i>    
                                 Cadastrar Novo Selo  
