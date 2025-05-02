@@ -115,12 +115,12 @@ include 'includes/header.php';
                     <div class="card-body">  
                         <div class="mb-3">  
                             <label class="form-label text-muted">Número do Selo</label>  
-                            <div class="d-flex align-items-center form-control bg-light position-relative">  
-                                <span class="flex-grow-1"><?php echo htmlspecialchars($selo_atual['numero']); ?></span>  
-                                <button type="button" class="btn-copy border-0 bg-transparent p-0 ms-2"   
-                                        data-clipboard-text="<?php echo htmlspecialchars($selo_atual['numero']); ?>"   
-                                        title="Copiar número">  
-                                    <i class="bi bi-clipboard" style="font-size: 16px;"></i>  
+                            <div class="position-relative">  
+                                <div class="form-control bg-light pe-5"><?php echo htmlspecialchars($selo_atual['numero']); ?></div>  
+                                <button type="button" class="copy-button position-absolute top-50 end-0 translate-middle-y"   
+                                        data-clipboard-text="<?php echo htmlspecialchars($selo_atual['numero']); ?>">  
+                                    <i data-feather="copy" class="me-1"></i>  
+                                    <span class="copy-tooltip">Copiado!</span>  
                                 </button>  
                             </div>  
                         </div>  
@@ -1020,12 +1020,18 @@ $('#formMarcarEnviado').submit(function(e) {
         }
     });
 });
+
 </script>  
 
 <script>  
 document.addEventListener('DOMContentLoaded', function() {  
+    // Inicializa os ícones Feather (se necessário)  
+    if (typeof feather !== 'undefined') {  
+        feather.replace();  
+    }  
+    
     // Seleciona todos os botões de cópia  
-    const copyButtons = document.querySelectorAll('.btn-copy');  
+    const copyButtons = document.querySelectorAll('.copy-button');  
     
     // Adiciona evento de clique a cada botão  
     copyButtons.forEach(button => {  
@@ -1033,28 +1039,53 @@ document.addEventListener('DOMContentLoaded', function() {
             // Obtém o texto a ser copiado  
             const textToCopy = this.getAttribute('data-clipboard-text');  
             
-            // Cria um elemento de input temporário para copiar o texto  
-            const tempInput = document.createElement('input');  
-            tempInput.value = textToCopy;  
-            document.body.appendChild(tempInput);  
-            
-            // Seleciona e copia o texto  
-            tempInput.select();  
-            document.execCommand('copy');  
-            
-            // Remove o input temporário  
-            document.body.removeChild(tempInput);  
-            
-            // Feedback visual (troca o ícone por 2 segundos)  
-            const icon = this.querySelector('i');  
-            const originalClass = icon.className;  
-            icon.className = 'bi bi-clipboard-check';  
-            
-            setTimeout(() => {  
-                icon.className = originalClass;  
-            }, 2000);  
+            // Usa a API moderna de Clipboard quando disponível  
+            if (navigator.clipboard && navigator.clipboard.writeText) {  
+                navigator.clipboard.writeText(textToCopy)  
+                    .then(() => showCopiedFeedback(this))  
+                    .catch(err => console.error('Erro ao copiar: ', err));  
+            } else {  
+                // Fallback para método mais antigo  
+                const tempInput = document.createElement('input');  
+                tempInput.value = textToCopy;  
+                document.body.appendChild(tempInput);  
+                tempInput.select();  
+                document.execCommand('copy');  
+                document.body.removeChild(tempInput);  
+                
+                showCopiedFeedback(this);  
+            }  
         });  
     });  
+    
+    // Função para mostrar feedback visual de cópia  
+    function showCopiedFeedback(button) {  
+        // Adiciona a classe para mostrar o tooltip  
+        button.classList.add('copied');  
+        
+        // Altera o ícone para check se estiver usando o Feather  
+        const iconElement = button.querySelector('[data-feather]');  
+        if (iconElement && typeof feather !== 'undefined') {  
+            // Salva o ícone original  
+            const originalIcon = iconElement.getAttribute('data-feather');  
+            
+            // Muda para ícone de check  
+            iconElement.setAttribute('data-feather', 'check');  
+            feather.replace();  
+            
+            // Restaura após 2 segundos  
+            setTimeout(() => {  
+                iconElement.setAttribute('data-feather', originalIcon);  
+                feather.replace();  
+                button.classList.remove('copied');  
+            }, 2000);  
+        } else {  
+            // Se não estiver usando Feather, apenas remove a classe após 2 segundos  
+            setTimeout(() => {  
+                button.classList.remove('copied');  
+            }, 2000);  
+        }  
+    }  
 });  
 </script>
 

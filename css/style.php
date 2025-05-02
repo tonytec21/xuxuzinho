@@ -1943,4 +1943,74 @@ body {
 [data-bs-theme="dark"] body {  
   scrollbar-color: #495057 #2c3034;  
 }
+
+/* Estilo para o botão de cópia */  
+.copy-button {  
+    background: transparent;  
+    border: none;  
+    cursor: pointer;  
+    padding: 0.375rem 0.75rem;  
+    transition: all 0.2s ease;  
+    color: #6c757d;  
+    outline: none;  
+    display: flex;  
+    align-items: center;  
+}  
+
+.copy-button:hover {  
+    color: #495057;  
+}  
+
+.copy-button:active {  
+    transform: scale(0.95);  
+}  
+
+.copy-button svg {  
+    width: 16px;  
+    height: 16px;  
+}  
+
+/* Tooltip de confirmação */  
+.copy-tooltip {  
+    position: absolute;  
+    background-color: #28a745;  
+    color: white;  
+    padding: 4px 8px;  
+    border-radius: 4px;  
+    font-size: 12px;  
+    top: -30px; /* Posicionado acima do botão */  
+    left: 50%;  
+    transform: translateX(-50%);  
+    white-space: nowrap;  
+    opacity: 0;  
+    visibility: hidden;  
+    transition: opacity 0.3s, visibility 0.3s;  
+    pointer-events: none;  
+    z-index: 10; /* Garante que o tooltip fique acima de outros elementos */  
+}  
+
+.copy-tooltip::after {  
+    content: '';  
+    position: absolute;  
+    top: 100%;  
+    left: 50%;  
+    margin-left: -5px;  
+    border-width: 5px;  
+    border-style: solid;  
+    border-color: #28a745 transparent transparent transparent;  
+}  
+
+.copy-button.copied .copy-tooltip {  
+    opacity: 1;  
+    visibility: visible;  
+}  
+
+/* Ajuste para tema escuro */  
+[data-bs-theme="dark"] .copy-button {  
+    color: #adb5bd;  
+}  
+
+[data-bs-theme="dark"] .copy-button:hover {  
+    color: #e9ecef;  
+}
 </style>  
