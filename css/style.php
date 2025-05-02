@@ -1086,7 +1086,7 @@ html[data-bs-theme="dark"] .xz-theme-dark {
 .xz-sidebar-toggler {  
   position: fixed;  
   top: 1rem;  
-  left: 1rem;  
+  right: 1rem;  
   z-index: 1029;  
   background-color: var(--xz-sidebar-bg);  
   color: var(--xz-sidebar-color);  
