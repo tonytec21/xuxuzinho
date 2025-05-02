@@ -117,99 +117,144 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
 <body>  
     <div class="wrapper">  
         <!-- Menu lateral -->  
-        <nav id="sidebar">  
-            <div class="sidebar-header">  
-                <img src="images/logo-white.png" alt="Xuxuzinho" class="img-fluid">  
-            </div>  
-
-            <ul class="list-unstyled components">  
-                <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'painel.php') ? 'active' : ''; ?>">  
-                    <a href="painel.php">  
-                        <i data-feather="home"></i>  
-                        <span>Início</span>  
-                    </a>  
-                </li>  
-                <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'selos.php' && !isset($_GET['id'])) ? 'active' : ''; ?>">  
-                    <a href="selos.php">  
-                        <i data-feather="file-text"></i>  
-                        <span>Controle de Selos</span>  
-                    </a>  
-                </li>  
-
-                <li class="<?php echo (basename($_SERVER['PHP_SELF']) == '#novoSeloModal' && !isset($_GET['id'])) ? 'active' : ''; ?>">  
-                    <a type="button" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
-                        <i data-feather="plus"></i>  
-                        Novo Selo  
-                    </a>      
-                </li>  
-
-                <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'relatorios.php' && !isset($_GET['id'])) ? 'active' : ''; ?>">  
-                    <a href="relatorios.php">  
-                        <i data-feather="bar-chart"></i>  
-                        <span>Relatórios</span>  
-                    </a>  
-                </li>  
-                
-                <?php if (is_admin()): ?>  
-                <li class="<?php echo (basename($_SERVER['PHP_SELF']) == 'aprovacao_usuarios.php') ? 'active' : ''; ?>">  
-                    <a href="aprovacao_usuarios.php">  
-                        <i data-feather="users"></i>  
-                        <span>Aprovar Usuários</span>  
-                    </a>  
-                </li>  
-                <?php endif; ?>  
-                
-                <!-- <li>  
-                    <a href="logout.php">  
-                        <i data-feather="log-out"></i>  
-                        <span>Sair</span>  
-                    </a>  
-                </li>   -->
-            </ul>  
+        <!-- Menu Lateral XZ - Novo e Moderno -->  
+        <div class="xz-sidebar-container">  
+            <!-- Overlay para fechamento do menu em dispositivos móveis -->  
+            <div class="xz-sidebar-overlay"></div>  
             
-            <div class="sidebar-footer">  
-                <button id="theme-toggle" class="btn btn-sm d-flex align-items-center theme-toggle-btn">  
-                    <div class="theme-toggle-track">  
-                        <div class="theme-toggle-thumb"></div>  
-                        <svg class="theme-toggle-icon theme-toggle-icon-light" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>  
-                        <svg class="theme-toggle-icon theme-toggle-icon-dark" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>  
-                    </div>  
-                    <span class="ms-2" id="theme-text">Modo Escuro</span>  
-                </button>  
-            </div> 
-        </nav>  
+            <!-- Menu lateral principal -->  
+            <nav class="xz-sidebar">  
+                <div class="xz-sidebar-header">  
+                    <img src="images/logo-white.png" alt="Xuxuzinho" class="xz-logo">  
+                    <button type="button" class="xz-sidebar-close d-md-none">  
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>  
+                    </button>  
+                </div>  
+                
+                <div class="xz-sidebar-content">  
+                    <ul class="xz-sidebar-menu">  
+                        <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'painel.php') ? 'xz-active' : ''; ?>">  
+                            <a href="painel.php" class="xz-sidebar-link">  
+                                <i data-feather="home"></i>  
+                                <span>&nbsp;Início</span>  
+                            </a>  
+                        </li>  
+                        
+                        <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'selos.php' && !isset($_GET['id'])) ? 'xz-active' : ''; ?>">  
+                            <a href="selos.php" class="xz-sidebar-link">  
+                                <i data-feather="file-text"> </i>  
+                                <span>&nbsp;Controle de Selos</span>  
+                            </a>  
+                        </li>  
+                        
+                        <li class="xz-sidebar-item">  
+                            <a href="#" class="xz-sidebar-link" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
+                                <i data-feather="plus"></i>  
+                                <span>&nbsp;Novo Selo</span>  
+                            </a>  
+                        </li>  
+                        
+                        <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'relatorios.php' && !isset($_GET['id'])) ? 'xz-active' : ''; ?>">  
+                            <a href="relatorios.php" class="xz-sidebar-link">  
+                                <i data-feather="bar-chart"></i>  
+                                <span>&nbsp;Relatórios</span>  
+                            </a>  
+                        </li>  
+                        
+                        <?php if (is_admin()): ?>  
+                        <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'aprovacao_usuarios.php') ? 'xz-active' : ''; ?>">  
+                            <a href="aprovacao_usuarios.php" class="xz-sidebar-link">  
+                                <i data-feather="users"></i>  
+                                <span>&nbsp;Aprovar Usuários</span>  
+                            </a>  
+                        </li>  
+                        <?php endif; ?>  
+                    </ul>  
+                </div>  
+                
+                <div class="xz-sidebar-footer">  
+                    <button id="xz-theme-toggle" class="xz-theme-toggle">  
+                        <div class="xz-theme-icon">  
+                            <i data-feather="sun" class="xz-theme-light"></i>  
+                            <i data-feather="moon" class="xz-theme-dark"></i>  
+                        </div>  
+                        <span id="xz-theme-text">Modo Escuro</span>  
+                    </button>  
+                </div>  
+            </nav>  
+        </div>  
+
+        <!-- Botão para abrir o menu em dispositivos móveis -->  
+        <button class="xz-sidebar-toggler d-md-none">  
+            <i data-feather="menu"></i>  
+        </button> 
 
         <!-- Conteúdo da página -->  
         <div id="content">  
-            <nav class="navbar navbar-expand-lg top-navbar">  
-                <div class="container-fluid">  
-                    <button type="button" id="sidebarCollapse" class="navbar-btn">  
+            <!-- XZ Navbar Superior -->  
+            <nav class="xz-topbar">  
+                <div class="xz-topbar-container">  
+                    <!-- Botão para controlar o menu lateral em telas maiores -->  
+                    <button type="button" class="xz-topbar-toggle d-none d-md-flex">  
                         <i data-feather="menu"></i>  
                     </button>  
                     
-                    <div class="ms-auto user-info">  
+                    <!-- Título da página (opcional) -->  
+                    <h2 class="xz-page-title d-none d-md-block">  
+                        <?php   
+                        // Detectar a página atual e mostrar o título apropriado  
+                        $current_page = basename($_SERVER['PHP_SELF']);  
+                        switch ($current_page) {  
+                            case 'painel.php':  
+                                echo 'Painel Principal';  
+                                break;  
+                            case 'selos.php':  
+                                echo isset($_GET['id']) ? 'Detalhes do Selo' : 'Controle de Selos';  
+                                break;  
+                            case 'relatorios.php':  
+                                echo 'Relatórios';  
+                                break;  
+                            case 'aprovacao_usuarios.php':  
+                                echo 'Aprovação de Usuários';  
+                                break;  
+                            case 'perfil.php':  
+                                echo 'Meu Perfil';  
+                                break;  
+                            case 'configuracoes.php':  
+                                echo 'Configurações';  
+                                break;  
+                            default:  
+                                echo 'Xuxuzinho';  
+                        }  
+                        ?>  
+                    </h2>  
+                    
+                    <!-- Informações do usuário -->  
+                    <div class="xz-user-area">  
                         <?php   
                         // Buscar informações da foto do perfil  
                         $usuario_id = $_SESSION['usuario_id'];  
                         $stmt = $pdo->prepare("SELECT foto_perfil FROM usuarios WHERE id = ?");  
                         $stmt->execute([$usuario_id]);  
                         $usuario_foto = $stmt->fetch(PDO::FETCH_COLUMN);  
-                        
-                        if (!empty($usuario_foto) && file_exists($usuario_foto)):   
                         ?>  
-                            <img src="<?php echo $usuario_foto; ?>" alt="Avatar" class="avatar" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;">  
-                        <?php else: ?>  
-                            <?php if (!empty($_SESSION['usuario_nome'])): ?>  
-                                <div class="avatar-text bg-primary d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border-radius: 50%;">  
-                                    <span class="text-white fw-bold"><?php echo strtoupper(substr($_SESSION['usuario_nome'], 0, 1)); ?></span>  
+                        
+                        <!-- Foto/Avatar do usuário -->  
+                        <div class="xz-user-avatar">  
+                            <?php if (!empty($usuario_foto) && file_exists($usuario_foto)): ?>  
+                                <img src="<?php echo $usuario_foto; ?>" alt="Avatar">  
+                            <?php elseif (!empty($_SESSION['usuario_nome'])): ?>  
+                                <div class="xz-avatar-text">  
+                                    <span><?php echo strtoupper(substr($_SESSION['usuario_nome'], 0, 1)); ?></span>  
                                 </div>  
                             <?php else: ?>  
-                                <img src="images/avatar.png" alt="Avatar" class="avatar">  
+                                <img src="images/avatar.png" alt="Avatar">  
                             <?php endif; ?>  
-                        <?php endif; ?>  
+                        </div>  
                         
-                        <div class="ms-2">  
-                            <p class="user-name mb-0">  
+                        <!-- Nome e cargo do usuário -->  
+                        <div class="xz-user-info">  
+                            <p class="xz-user-name">  
                                 <?php   
                                 // Função para obter primeiro e último nome  
                                 function getPrimeiroUltimoNome($nomeCompleto) {  
@@ -227,20 +272,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
                                 
                                 echo htmlspecialchars(getPrimeiroUltimoNome($_SESSION['usuario_nome']));   
                                 ?>  
-                            </p> 
-                            <p class="user-role mb-0 small text-muted">  
+                            </p>  
+                            <p class="xz-user-role">  
                                 <?php echo ($_SESSION['usuario_tipo'] == 'admin') ? 'Administrador' : 'Usuário'; ?>  
                             </p>  
                         </div>  
-                        <div class="dropdown ms-2">  
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">  
-                                <i data-feather="chevron-down" class="feather-sm"></i>  
+                        
+                        <!-- Dropdown do usuário -->  
+                        <div class="xz-user-dropdown">  
+                            <button class="xz-dropdown-toggle" type="button" id="xzUserDropdown" data-bs-toggle="dropdown" aria-expanded="false">  
+                                <i data-feather="chevron-down"></i>  
                             </button>  
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">  
-                                <li><a class="dropdown-item" href="perfil.php"><i data-feather="user" class="feather-sm me-2"></i> Meu Perfil</a></li>  
-                                <li><a class="dropdown-item" href="configuracoes.php"><i data-feather="settings" class="feather-sm me-2"></i> Configurações</a></li>  
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="xzUserDropdown">  
+                                <li>  
+                                    <a class="dropdown-item" href="perfil.php">  
+                                        <i data-feather="user" class="feather-sm me-2"></i> Meu Perfil  
+                                    </a>  
+                                </li>  
+                                <li>  
+                                    <a class="dropdown-item" href="configuracoes.php">  
+                                        <i data-feather="settings" class="feather-sm me-2"></i> Configurações  
+                                    </a>  
+                                </li>  
                                 <li><hr class="dropdown-divider"></li>  
-                                <li><a class="dropdown-item text-danger" href="logout.php"><i data-feather="log-out" class="feather-sm me-2"></i> Sair</a></li>  
+                                <li>  
+                                    <a class="dropdown-item text-danger" href="logout.php">  
+                                        <i data-feather="log-out" class="feather-sm me-2"></i> Sair  
+                                    </a>  
+                                </li>  
                             </ul>  
                         </div>  
                     </div>  
