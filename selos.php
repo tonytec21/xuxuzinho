@@ -777,8 +777,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             return;  
                         }  
                         
-                        // Verificar tamanho do arquivo (20MB)  
-                        if (file.size > 20 * 2048 * 2048) {  
+                        // Verificar tamanho do arquivo (10MB)  
+                        if (file.size > 10 * 1024 * 1024) {  
                             showToast('Arquivo muito grande: ' + file.name, 'error');  
                             return;  
                         }  
