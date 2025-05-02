@@ -82,18 +82,16 @@ include 'includes/header.php';
                     <?php echo $modo_edicao ? 'Adicione documentos ao selo selecionado' : 'Cadastre e gerencie seus selos eletrônicos'; ?>  
                 </p>  
             </div>  
-            <?php if (!$modo_edicao): ?>  
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
+            <div class="d-flex gap-2">  
+                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
                     <i data-feather="plus" class="me-1" style="width: 16px; height: 16px;"></i> Novo Selo  
                 </button>  
-            <?php else: ?>  
                 <a href="selos.php" class="btn btn-outline-secondary">  
                     <i data-feather="arrow-left" class="me-1" style="width: 16px; height: 16px;"></i> Voltar  
                 </a>  
-            <?php endif; ?>  
+            </div>  
         </div>  
-    </div>  
-    
+    </div> 
     <?php if (!empty($mensagem) && !$sucesso): ?>  
         <div class="alert alert-danger"><?php echo $mensagem; ?></div>  
     <?php elseif (!empty($mensagem) && $sucesso): ?>  
