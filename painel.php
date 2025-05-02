@@ -152,7 +152,14 @@ include 'includes/header.php';
     <div class="row mb-4">  
         <div class="col-12">  
             <h1 class="fw-bold">Painel de Controle</h1>  
-            <p class="text-muted">Bem-vindo(a) de volta, <?php echo $_SESSION['usuario_nome']; ?>!</p>  
+            <p class="text-muted">Bem-vindo(a) de volta, <?php   
+                // Pega apenas o primeiro nome do usuário  
+                $nome_completo = $_SESSION['usuario_nome'];  
+                $primeiro_nome = explode(' ', $nome_completo)[0];  
+                
+                // Garante que a primeira letra esteja em maiúscula  
+                echo ucfirst(strtolower($primeiro_nome));   
+            ?>!</p> 
         </div>  
     </div>  
     
