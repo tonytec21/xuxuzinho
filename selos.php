@@ -115,7 +115,14 @@ include 'includes/header.php';
                     <div class="card-body">  
                         <div class="mb-3">  
                             <label class="form-label text-muted">Número do Selo</label>  
-                            <div class="form-control bg-light"><?php echo htmlspecialchars($selo_atual['numero']); ?></div>  
+                            <div class="d-flex align-items-center form-control bg-light position-relative">  
+                                <span class="flex-grow-1"><?php echo htmlspecialchars($selo_atual['numero']); ?></span>  
+                                <button type="button" class="btn-copy border-0 bg-transparent p-0 ms-2"   
+                                        data-clipboard-text="<?php echo htmlspecialchars($selo_atual['numero']); ?>"   
+                                        title="Copiar número">  
+                                    <i class="bi bi-clipboard" style="font-size: 16px;"></i>  
+                                </button>  
+                            </div>  
                         </div>  
                         <div class="mb-3">  
                             <label class="form-label text-muted">Data de Cadastro</label>  
@@ -1013,7 +1020,42 @@ $('#formMarcarEnviado').submit(function(e) {
         }
     });
 });
-
 </script>  
+
+<script>  
+document.addEventListener('DOMContentLoaded', function() {  
+    // Seleciona todos os botões de cópia  
+    const copyButtons = document.querySelectorAll('.btn-copy');  
+    
+    // Adiciona evento de clique a cada botão  
+    copyButtons.forEach(button => {  
+        button.addEventListener('click', function() {  
+            // Obtém o texto a ser copiado  
+            const textToCopy = this.getAttribute('data-clipboard-text');  
+            
+            // Cria um elemento de input temporário para copiar o texto  
+            const tempInput = document.createElement('input');  
+            tempInput.value = textToCopy;  
+            document.body.appendChild(tempInput);  
+            
+            // Seleciona e copia o texto  
+            tempInput.select();  
+            document.execCommand('copy');  
+            
+            // Remove o input temporário  
+            document.body.removeChild(tempInput);  
+            
+            // Feedback visual (troca o ícone por 2 segundos)  
+            const icon = this.querySelector('i');  
+            const originalClass = icon.className;  
+            icon.className = 'bi bi-clipboard-check';  
+            
+            setTimeout(() => {  
+                icon.className = originalClass;  
+            }, 2000);  
+        });  
+    });  
+});  
+</script>
 
 <?php include 'includes/footer.php'; ?>   
