@@ -206,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
                         $current_page = basename($_SERVER['PHP_SELF']);  
                         switch ($current_page) {  
                             case 'painel.php':  
-                                echo 'Painel Principal';  
+                                echo 'Painel de Controle';  
                                 break;  
                             case 'selos.php':  
                                 echo isset($_GET['id']) ? 'Detalhes do Selo' : 'Controle de Selos';  
