@@ -324,7 +324,7 @@ include 'includes/header.php';
                                             <span id="folha-atual"
                                                 class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold fs-6">
                                                 Folha não selecionada
-                                            </span><br>
+                                            </span><br><br>
                                             <span id="termo-atual"
                                                 class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold fs-6">
                                                 Termo não selecionado
