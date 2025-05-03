@@ -320,9 +320,15 @@ include 'includes/header.php';
                                         <button class="btn btn-primary px-4 py-2 shadow-sm rounded-pill" id="btn-pagina-anterior" disabled>  
                                             <i data-feather="chevron-left" class="me-1" style="width: 18px; height: 18px;"></i> Anterior  
                                         </button>  
-                                        <span id="pagina-atual" class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold fs-6">  
-                                            Página não selecionada  
-                                        </span>  
+                                        <div class="text-center">
+                                            <span id="pagina-atual"
+                                                class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold fs-6">
+                                                Página não selecionada
+                                            </span>
+                                            <div id="termo-atual" class="small text-muted mt-1">
+                                                <!-- o JS preencherá aqui -->
+                                            </div>
+                                        </div>
                                         <button class="btn btn-primary px-4 py-2 shadow-sm rounded-pill" id="btn-proxima-pagina" disabled>  
                                             Próxima <i data-feather="chevron-right" class="ms-1" style="width: 18px; height: 18px;"></i>  
                                         </button>  
@@ -899,13 +905,27 @@ document.addEventListener('DOMContentLoaded', function() {
             img.alt = `Página ${pagina.numero_pagina}`;  
             
             // Atualizar estado  
-            paginaAtualId = pagina.id;  
-            const numeroFolha = Math.floor((pagina.numero_pagina - 1) / 2) + 1;
-            const lado = pagina.eh_verso == 1 ? 'verso' : 'frente';
-            paginaAtual.textContent = `Folha ${numeroFolha} (${lado})`;
- 
-            // Atualizar botões de navegação  
-            atualizarBotoesNavegacao();  
+            // ----------- título da página -----------
+            paginaAtualId = pagina.id;
+            document.getElementById('pagina-atual').textContent =
+                    `Página ${pagina.numero_pagina}`;   // valor exato do BD
+
+            // ----------- termo (inicial / final) ----
+            const termoBox = document.getElementById('termo-atual');
+            if (pagina.termo_inicial == pagina.termo_final) {
+                termoBox.textContent = `Termo ${pagina.termo_inicial}`;
+            } else {
+                termoBox.textContent =
+                    `Termos ${pagina.termo_inicial} – ${pagina.termo_final}`;
+            }
+
+            // (opcional) caso queira também manter a informação de folha/lado:
+            // const desc = `Folha ${pagina.numero_folha} (${pagina.eh_verso==1?'verso':'frente'})`;
+            // termoBox.insertAdjacentHTML('beforeend', `<br><span class="text-secondary small">${desc}</span>`);
+
+            // Actualiza botões de navegação  
+            atualizarBotoesNavegacao();
+  
         };  
         
         img.onerror = function() {  
