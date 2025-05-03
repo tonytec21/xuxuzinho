@@ -2247,58 +2247,123 @@ body {
 
 
 <style>  
-.navigation-indicator {  
-    transition: all 0.3s ease;  
+/* Estilos elegantes e responsivos */  
+.card-body.bg-light {  
+    background-color: #f8fafc !important;  
+    border-radius: 10px;  
 }  
 
-.navigation-indicator:hover {  
-    transform: translateY(-3px);  
-}  
-
+/* Botões de navegação */  
 .btn-primary {  
-    background: linear-gradient(45deg, #4e73df, #2e59d9);  
+    background-color: #4361ee;  
     border: none;  
-    font-weight: 600;  
-    transition: all 0.3s ease;  
+    box-shadow: 0 3px 10px rgba(67, 97, 238, 0.2);  
+    font-weight: 500;  
+    letter-spacing: 0.3px;  
+    transition: all 0.2s ease;  
 }  
 
 .btn-primary:hover:not(:disabled) {  
-    background: linear-gradient(45deg, #2e59d9, #224abb);  
+    background-color: #3a56d4;  
+    box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);  
     transform: translateY(-2px);  
-    box-shadow: 0 5px 15px rgba(78, 115, 223, 0.3) !important;  
+}  
+
+.btn-primary:active:not(:disabled) {  
+    transform: translateY(0);  
 }  
 
 .btn-primary:disabled {  
-    background: linear-gradient(45deg, #a4b2e0, #8698d6);  
+    background-color: #a1b0f8;  
     opacity: 0.7;  
 }  
 
-.card-body.bg-light {  
-    background: linear-gradient(to right, #f8f9fc, #f1f3f9) !important;  
-    border-radius: 1rem;  
+/* Display de navegação */  
+.navigation-display {  
+    position: relative;  
+    padding: 0.5rem;  
+    min-width: 220px;  
 }  
 
-.icon-container {  
-    box-shadow: 0 3px 5px rgba(78, 115, 223, 0.1);  
+.navigation-label {  
     transition: all 0.3s ease;  
 }  
 
-.navigation-indicator:hover .icon-container {  
-    background-color: rgba(78, 115, 223, 0.2) !important;  
+.navigation-label:hover {  
+    transform: translateY(-2px);  
 }  
 
-#folha-atual, #termo-atual {  
-    letter-spacing: 0.5px;  
+/* Badges elegantes */  
+.badge {  
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;  
+    position: relative;  
+    display: inline-block;  
+    font-size: 0.9rem !important;  
+    padding: 0.6rem 1.2rem !important;  
+    font-weight: 600 !important;  
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);  
+    transition: all 0.2s ease;  
+    border: 1px solid rgba(67, 97, 238, 0.1);  
+    min-width: 120px;  
 }  
 
-/* Animação suave quando muda de página */  
-@keyframes pulse {  
-    0% { transform: scale(1); }  
-    50% { transform: scale(1.05); }  
-    100% { transform: scale(1); }  
+.badge.bg-primary {  
+    background-color: rgba(67, 97, 238, 0.1) !important;  
 }  
 
-.highlight-change {  
-    animation: pulse 0.5s ease-in-out;  
+.badge.text-primary {  
+    color: #4361ee !important;  
+}  
+
+/* Responsividade */  
+@media (max-width: 767px) {  
+    .d-flex.justify-content-between {  
+        flex-direction: column;  
+        gap: 1rem;  
+        align-items: center;  
+    }  
+    
+    .navigation-display {  
+        order: -1;  
+        margin-bottom: 0.5rem;  
+        width: 100%;  
+    }  
+    
+    .btn-primary {  
+        width: 100%;  
+        margin: 0.25rem 0;  
+    }  
+    
+    .badge {  
+        width: 100%;  
+        max-width: 300px;  
+    }  
+}  
+
+@media (min-width: 768px) and (max-width: 991px) {  
+    .d-flex.justify-content-between {  
+        padding: 0.5rem !important;  
+    }  
+    
+    .btn-primary {  
+        padding: 0.4rem 0.8rem !important;  
+        font-size: 0.9rem;  
+    }  
+    
+    .badge {  
+        padding: 0.5rem 0.8rem !important;  
+        font-size: 0.85rem !important;  
+    }  
+}  
+
+/* Animação sutil ao atualizar */  
+@keyframes fadeInPulse {  
+    0% { opacity: 0.7; transform: scale(0.98); }  
+    70% { opacity: 1; transform: scale(1.03); }  
+    100% { opacity: 1; transform: scale(1); }  
+}  
+
+.value-updated {  
+    animation: fadeInPulse 0.5s ease-out;  
 }  
 </style>  

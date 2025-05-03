@@ -315,49 +315,28 @@ include 'includes/header.php';
                                         </button>  
                                     </div>  
                                 </div>  
-                                <div class="card-body p-3 bg-light bg-gradient">  
-                                    <div class="d-flex justify-content-between align-items-center mb-2">  
-                                        <button class="btn btn-primary btn-lg px-4 py-2 shadow-sm rounded-pill d-flex align-items-center" id="btn-pagina-anterior" disabled>  
-                                            <i data-feather="chevron-left" class="me-2" style="width: 20px; height: 20px;"></i>   
-                                            <span>Anterior</span>  
+                                <div class="card-body p-2 bg-light">  
+                                    <div class="d-flex justify-content-between align-items-center mb-3 px-3 py-2">  
+                                        <button class="btn btn-primary px-4 py-2 shadow-sm rounded-pill" id="btn-pagina-anterior" disabled>  
+                                            <i data-feather="chevron-left" class="me-1" style="width: 18px; height: 18px;"></i> Anterior  
                                         </button>  
-                                        
-                                        <div class="text-center position-relative">  
-                                            <div class="d-flex flex-column gap-2">  
-                                                <!-- Folha Atual -->  
-                                                <div class="navigation-indicator folha-indicator">  
-                                                    <div class="d-flex align-items-center justify-content-center bg-white rounded-pill shadow-sm px-4 py-3">  
-                                                        <div class="icon-container me-2 bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">  
-                                                            <i data-feather="book-open" class="text-primary" style="width: 20px; height: 20px;"></i>  
-                                                        </div>  
-                                                        <div class="text-start">  
-                                                            <span class="d-block text-muted small">Folha</span>  
-                                                            <span id="folha-atual" class="fw-bold fs-5 text-primary">-</span>  
-                                                        </div>  
-                                                    </div>  
-                                                </div>  
-                                                
-                                                <!-- Termo Atual -->  
-                                                <div class="navigation-indicator termo-indicator">  
-                                                    <div class="d-flex align-items-center justify-content-center bg-white rounded-pill shadow-sm px-4 py-3">  
-                                                        <div class="icon-container me-2 bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">  
-                                                            <i data-feather="hash" class="text-primary" style="width: 20px; height: 20px;"></i>  
-                                                        </div>  
-                                                        <div class="text-start">  
-                                                            <span class="d-block text-muted small">Termo</span>  
-                                                            <span id="termo-atual" class="fw-bold fs-5 text-primary">-</span>  
-                                                        </div>  
-                                                    </div>  
-                                                </div>  
+                                        <div class="text-center navigation-display">  
+                                            <div class="navigation-label">  
+                                                <span id="folha-atual" class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold fs-6">  
+                                                    Folha não selecionada  
+                                                </span>  
+                                            </div>  
+                                            <div class="navigation-label mt-2">  
+                                                <span id="termo-atual" class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold fs-6">  
+                                                    Termo não selecionado  
+                                                </span>  
                                             </div>  
                                         </div>  
-                                        
-                                        <button class="btn btn-primary btn-lg px-4 py-2 shadow-sm rounded-pill d-flex align-items-center" id="btn-proxima-pagina" disabled>  
-                                            <span>Próxima</span>  
-                                            <i data-feather="chevron-right" class="ms-2" style="width: 20px; height: 20px;"></i>  
+                                        <button class="btn btn-primary px-4 py-2 shadow-sm rounded-pill" id="btn-proxima-pagina" disabled>  
+                                            Próxima <i data-feather="chevron-right" class="ms-1" style="width: 18px; height: 18px;"></i>  
                                         </button>  
                                     </div>  
-                                </div>  
+                                </div>   
                             </div>
                         </div>
                     </div>
