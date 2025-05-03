@@ -321,13 +321,11 @@ include 'includes/header.php';
                                             <i data-feather="chevron-left" class="me-1" style="width: 18px; height: 18px;"></i> Anterior  
                                         </button>  
                                         <div class="text-center">
-                                            <span id="pagina-atual"
+                                            <span id="folha-atual"
                                                 class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold fs-6">
-                                                Página não selecionada
+                                                Folha não selecionada
                                             </span>
-                                            <div id="termo-atual" class="small text-muted mt-1">
-                                                <!-- o JS preencherá aqui -->
-                                            </div>
+                                            <div id="termo-atual" class="small text-muted mt-1"></div>
                                         </div>
                                         <button class="btn btn-primary px-4 py-2 shadow-sm rounded-pill" id="btn-proxima-pagina" disabled>  
                                             Próxima <i data-feather="chevron-right" class="ms-1" style="width: 18px; height: 18px;"></i>  
