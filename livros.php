@@ -315,27 +315,49 @@ include 'includes/header.php';
                                         </button>  
                                     </div>  
                                 </div>  
-                                <div class="card-body p-2 bg-light">  
-                                    <div class="d-flex justify-content-between align-items-center mb-3 px-3 py-2">  
-                                        <button class="btn btn-primary px-4 py-2 shadow-sm rounded-pill" id="btn-pagina-anterior" disabled>  
-                                            <i data-feather="chevron-left" class="me-1" style="width: 18px; height: 18px;"></i> Anterior  
+                                <div class="card-body p-3 bg-light bg-gradient">  
+                                    <div class="d-flex justify-content-between align-items-center mb-2">  
+                                        <button class="btn btn-primary btn-lg px-4 py-2 shadow-sm rounded-pill d-flex align-items-center" id="btn-pagina-anterior" disabled>  
+                                            <i data-feather="chevron-left" class="me-2" style="width: 20px; height: 20px;"></i>   
+                                            <span>Anterior</span>  
                                         </button>  
-                                        <div class="text-center">
-                                            <span id="folha-atual"
-                                                class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold fs-6">
-                                                Folha não selecionada
-                                            </span><br><br>
-                                            <span id="termo-atual"
-                                                class="badge bg-primary bg-opacity-10 text-primary px-4 py-2 rounded-pill fw-bold fs-6">
-                                                Termo não selecionado
-                                            </span>
-                                            <!-- <div id="termo-atual" class="small text-muted mt-1"></div> -->
-                                        </div>
-                                        <button class="btn btn-primary px-4 py-2 shadow-sm rounded-pill" id="btn-proxima-pagina" disabled>  
-                                            Próxima <i data-feather="chevron-right" class="ms-1" style="width: 18px; height: 18px;"></i>  
+                                        
+                                        <div class="text-center position-relative">  
+                                            <div class="d-flex flex-column gap-2">  
+                                                <!-- Folha Atual -->  
+                                                <div class="navigation-indicator folha-indicator">  
+                                                    <div class="d-flex align-items-center justify-content-center bg-white rounded-pill shadow-sm px-4 py-3">  
+                                                        <div class="icon-container me-2 bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">  
+                                                            <i data-feather="book-open" class="text-primary" style="width: 20px; height: 20px;"></i>  
+                                                        </div>  
+                                                        <div class="text-start">  
+                                                            <span class="d-block text-muted small">Folha</span>  
+                                                            <span id="folha-atual" class="fw-bold fs-5 text-primary">-</span>  
+                                                        </div>  
+                                                    </div>  
+                                                </div>  
+                                                
+                                                <!-- Termo Atual -->  
+                                                <div class="navigation-indicator termo-indicator">  
+                                                    <div class="d-flex align-items-center justify-content-center bg-white rounded-pill shadow-sm px-4 py-3">  
+                                                        <div class="icon-container me-2 bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">  
+                                                            <i data-feather="hash" class="text-primary" style="width: 20px; height: 20px;"></i>  
+                                                        </div>  
+                                                        <div class="text-start">  
+                                                            <span class="d-block text-muted small">Termo</span>  
+                                                            <span id="termo-atual" class="fw-bold fs-5 text-primary">-</span>  
+                                                        </div>  
+                                                    </div>  
+                                                </div>  
+                                            </div>  
+                                        </div>  
+                                        
+                                        <button class="btn btn-primary btn-lg px-4 py-2 shadow-sm rounded-pill d-flex align-items-center" id="btn-proxima-pagina" disabled>  
+                                            <span>Próxima</span>  
+                                            <i data-feather="chevron-right" class="ms-2" style="width: 20px; height: 20px;"></i>  
                                         </button>  
                                     </div>  
-                                </div>
+                                </div>  
                             </div>
                         </div>
                     </div>
@@ -1493,6 +1515,28 @@ $(document).ready(function () {
         });
     });
 });
+
+
+function atualizarNavegacao(folha, termo) {  
+    const folhaEl = document.getElementById('folha-atual');  
+    const termoEl = document.getElementById('termo-atual');  
+    
+    // Remover classe de animação  
+    folhaEl.classList.remove('highlight-change');  
+    termoEl.classList.remove('highlight-change');  
+    
+    // Força um reflow para reiniciar a animação  
+    void folhaEl.offsetWidth;  
+    void termoEl.offsetWidth;  
+    
+    // Atualizar valores  
+    folhaEl.textContent = folha || '-';  
+    termoEl.textContent = termo || '-';  
+    
+    // Adicionar classe para animar  
+    folhaEl.classList.add('highlight-change');  
+    termoEl.classList.add('highlight-change');  
+}  
 
 </script>
 

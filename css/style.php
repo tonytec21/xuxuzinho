@@ -2244,3 +2244,61 @@ body {
             color: #6c757d;  
         }  
         </style>
+
+
+<style>  
+.navigation-indicator {  
+    transition: all 0.3s ease;  
+}  
+
+.navigation-indicator:hover {  
+    transform: translateY(-3px);  
+}  
+
+.btn-primary {  
+    background: linear-gradient(45deg, #4e73df, #2e59d9);  
+    border: none;  
+    font-weight: 600;  
+    transition: all 0.3s ease;  
+}  
+
+.btn-primary:hover:not(:disabled) {  
+    background: linear-gradient(45deg, #2e59d9, #224abb);  
+    transform: translateY(-2px);  
+    box-shadow: 0 5px 15px rgba(78, 115, 223, 0.3) !important;  
+}  
+
+.btn-primary:disabled {  
+    background: linear-gradient(45deg, #a4b2e0, #8698d6);  
+    opacity: 0.7;  
+}  
+
+.card-body.bg-light {  
+    background: linear-gradient(to right, #f8f9fc, #f1f3f9) !important;  
+    border-radius: 1rem;  
+}  
+
+.icon-container {  
+    box-shadow: 0 3px 5px rgba(78, 115, 223, 0.1);  
+    transition: all 0.3s ease;  
+}  
+
+.navigation-indicator:hover .icon-container {  
+    background-color: rgba(78, 115, 223, 0.2) !important;  
+}  
+
+#folha-atual, #termo-atual {  
+    letter-spacing: 0.5px;  
+}  
+
+/* Animação suave quando muda de página */  
+@keyframes pulse {  
+    0% { transform: scale(1); }  
+    50% { transform: scale(1.05); }  
+    100% { transform: scale(1); }  
+}  
+
+.highlight-change {  
+    animation: pulse 0.5s ease-in-out;  
+}  
+</style>  
