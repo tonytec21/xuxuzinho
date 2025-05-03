@@ -905,26 +905,23 @@ document.addEventListener('DOMContentLoaded', function() {
             img.alt = `Página ${pagina.numero_pagina}`;  
             
             // Atualizar estado  
-            // ----------- título da página -----------
+            // ----- Folha + lado -----
             paginaAtualId = pagina.id;
-            document.getElementById('pagina-atual').textContent =
-                    `Página ${pagina.numero_pagina}`;   // valor exato do BD
 
-            // ----------- termo (inicial / final) ----
+            const folhaTxt = `Folha ${pagina.numero_folha} (${pagina.eh_verso == 1 ? 'Verso' : 'Frente'})`;
+            document.getElementById('folha-atual').textContent = folhaTxt;
+
+            // ----- Termo(s) -----
             const termoBox = document.getElementById('termo-atual');
             if (pagina.termo_inicial == pagina.termo_final) {
                 termoBox.textContent = `Termo ${pagina.termo_inicial}`;
             } else {
-                termoBox.textContent =
-                    `Termos ${pagina.termo_inicial} – ${pagina.termo_final}`;
+                termoBox.textContent = `Termos ${pagina.termo_inicial} – ${pagina.termo_final}`;
             }
 
-            // (opcional) caso queira também manter a informação de folha/lado:
-            // const desc = `Folha ${pagina.numero_folha} (${pagina.eh_verso==1?'verso':'frente'})`;
-            // termoBox.insertAdjacentHTML('beforeend', `<br><span class="text-secondary small">${desc}</span>`);
-
-            // Actualiza botões de navegação  
+            // Botões de navegação
             atualizarBotoesNavegacao();
+
   
         };  
         
