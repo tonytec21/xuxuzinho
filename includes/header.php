@@ -146,6 +146,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
                                 <span>&nbsp;Controle de Selos</span>  
                             </a>  
                         </li>  
+
+                        <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'livros.php' && !isset($_GET['id'])) ? 'xz-active' : ''; ?>">  
+                            <a href="livros.php" class="xz-sidebar-link">  
+                                <i data-feather="book"> </i>  
+                                <span>&nbsp;Livros</span>  
+                            </a>  
+                        </li>  
                         
                         <li class="xz-sidebar-item">  
                             <a href="#" class="xz-sidebar-link" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
@@ -219,6 +226,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
                                 break;  
                             case 'perfil.php':  
                                 echo 'Meu Perfil';  
+                                break;  
+                            case 'livros.php':  
+                                echo 'Livros';  
                                 break;  
                             case 'configuracoes.php':  
                                 echo 'Configurações';  

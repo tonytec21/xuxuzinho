@@ -279,7 +279,7 @@ input:checked + .slider:before {
 [data-bs-theme="dark"] .bg-light {  
     background-color: #343a40!important;  
     border-color: #495057!important;  
-    color: #f8f9fa;  
+    color: #adb5bd!important;  
 }  
 
 [data-bs-theme="dark"] .table {  
@@ -2013,4 +2013,234 @@ body {
 [data-bs-theme="dark"] .copy-button:hover {  
     color: #e9ecef;  
 }
-</style>  
+
+
+</style>
+
+<style>  
+/* Estilos adicionais para o bloco de detalhes do livro e visualizador */  
+.detail-card {  
+    transition: all 0.2s ease-in-out;  
+    border: 1px solid rgba(0,0,0,0.05);  
+}  
+
+.detail-card:hover {  
+    background-color: #f8f9fa;  
+    transform: translateY(-2px);  
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.08) !important;  
+}  
+
+.shadow-inner {  
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.075) !important;  
+}  
+
+.hover-lift {  
+    transition: all 0.2s ease-in-out;  
+}  
+
+.hover-lift:hover {  
+    transform: translateY(-3px);  
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.08) !important;  
+}  
+
+/* Estilos para o controle de zoom e visualização */  
+#visualizador-pagina {  
+    transition: background-color 0.3s;  
+    scroll-behavior: smooth;  
+}  
+
+#visualizador-pagina.zoomed {  
+    cursor: move;  
+    background-color: #f8f9fa;  
+}  
+
+/* Botões soft */  
+.btn-soft-primary {  
+    color: #0d6efd;  
+    background-color: rgba(13, 110, 253, 0.1);  
+    border-color: transparent;  
+}  
+
+.btn-soft-primary:hover {  
+    color: #fff;  
+    background-color: #0d6efd;  
+}  
+
+.btn-soft-danger {  
+    color: #dc3545;  
+    background-color: rgba(220, 53, 69, 0.1);  
+    border-color: transparent;  
+}  
+
+.btn-soft-danger:hover {  
+    color: #fff;  
+    background-color: #dc3545;  
+}  
+
+/* Estilo para os badges */  
+.badge {  
+    font-weight: 500;  
+}  
+
+/* Melhoria nos botões de navegação */  
+.btn-primary {  
+    transition: all 0.2s;  
+}  
+
+.btn-primary:hover:not(:disabled) {  
+    transform: translateY(-2px);  
+    box-shadow: 0 .5rem 1rem rgba(13, 110, 253,.15) !important;  
+}  
+
+.rounded-pill {  
+    border-radius: 50rem !important;  
+}  
+
+/* Status badges */  
+.status-badge {  
+    padding: 0.35em 0.65em;  
+    font-size: 0.75em;  
+    font-weight: 600;  
+    text-transform: uppercase;  
+    letter-spacing: 0.5px;  
+}  
+
+/* Sombra específica para o visualizador */  
+#imagem-pagina {  
+    transition: all 0.3s ease;  
+    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);  
+}  
+
+#imagem-pagina.active {  
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;  
+}  
+
+/* Melhorias na responsividade */  
+@media (max-width: 768px) {  
+    .badge {  
+        font-size: 0.75rem;  
+    }  
+    
+    #visualizador-pagina {  
+        min-height: 500px;  
+    }  
+    
+    #imagem-pagina {  
+        min-height: 480px;  
+    }  
+}  
+
+/* Efeito para botões clicáveis */  
+.btn {  
+    position: relative;  
+    overflow: hidden;  
+}  
+
+.btn:after {  
+    content: '';  
+    position: absolute;  
+    top: 50%;  
+    left: 50%;  
+    width: 5px;  
+    height: 5px;  
+    background: rgba(255, 255, 255, 0.5);  
+    opacity: 0;  
+    border-radius: 100%;  
+    transform: scale(1, 1) translate(-50%);  
+    transform-origin: 50% 50%;  
+}  
+
+.btn:focus:not(:active)::after {  
+    animation: ripple 1s ease-out;  
+}  
+
+@keyframes ripple {  
+    0% {  
+        transform: scale(0, 0);  
+        opacity: 0.5;  
+    }  
+    20% {  
+        transform: scale(25, 25);  
+        opacity: 0.3;  
+    }  
+    100% {  
+        opacity: 0;  
+        transform: scale(40, 40);  
+    }  
+}  
+</style>
+
+<style>  
+        /* Estilos adicionais para melhorar o design */  
+        .card-header {  
+            border-bottom: 1px solid rgba(0,0,0,0.05);  
+        }  
+
+        .border-dashed {  
+            border: 2px dashed #dee2e6 !important;  
+            transition: all 0.3s ease;  
+        }  
+
+        .border-dashed:hover {  
+            border-color: #6c757d !important;  
+            background-color: rgba(0,0,0,0.01);  
+        }  
+
+        .dropzone-area {  
+            transition: all 0.3s ease-in-out;  
+        }  
+
+        /* Estilo para quando arrastar arquivos sobre a área */  
+        .dropzone-area.highlight {  
+            border-color: #0d6efd !important;  
+            background-color: rgba(13,110,253,0.05);  
+        }  
+
+        /* Melhorar exibição dos arquivos selecionados */  
+        #file-preview-list .preview-item {  
+            padding: 10px;  
+            margin-bottom: 8px;  
+            border-radius: 5px;  
+            border: 1px solid #dee2e6;  
+            background-color: #f8f9fa;  
+            transition: background-color 0.2s;  
+        }  
+
+        #file-preview-list .preview-item:hover {  
+            background-color: #f0f0f0;  
+        }  
+
+        #file-preview-list .preview-item:last-child {  
+            margin-bottom: 0;  
+        }  
+
+        /* Efeito de hover nas linhas da tabela */  
+        .table tbody tr {  
+            transition: background-color 0.2s;  
+        }  
+
+        .table tbody tr:hover {  
+            background-color: rgba(13,110,253,0.03);  
+        }  
+
+        /* Estilo para os botões */  
+        .btn-outline-primary {  
+            border-width: 1.5px;  
+        }  
+
+        .btn-outline-primary:hover {  
+            box-shadow: 0 .125rem .25rem rgba(13,110,253,.2) !important;  
+        }  
+
+        .empty-state {  
+            opacity: 0.6;  
+        }  
+
+        .table thead th {  
+            font-weight: 600;  
+            letter-spacing: 0.5px;  
+            text-transform: uppercase;  
+            font-size: 0.75rem;  
+            color: #6c757d;  
+        }  
+        </style>
