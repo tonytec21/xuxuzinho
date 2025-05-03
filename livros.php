@@ -103,10 +103,10 @@ include 'includes/header.php';
                     <i data-feather="list" class="me-1" style="width: 14px; height: 14px;"></i>  
                     Listar Todos  
                 </a>  
-                <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editarLivroModal">  
-                    <i data-feather="edit" class="me-1" style="width: 14px; height: 14px;"></i>  
-                    Editar Livro  
-                </button>   -->
+                <a href="editar_livro.php?id=<?php echo $livro_atual['id']; ?>" class="btn btn-primary">
+                    <i data-feather="edit" class="me-1" style="width:14px;height:14px;"></i>
+                    Editar Livro
+                </a>
             </div>  
         <?php endif; ?>  
     </div>  

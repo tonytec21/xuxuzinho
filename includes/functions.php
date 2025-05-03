@@ -36,4 +36,11 @@ function sanitize($data) {
     $data = htmlspecialchars($data);  
     return $data;  
 }  
+
+function set_mensagem($tipo, $texto) {  
+    $_SESSION['mensagem'] = [  
+        'tipo' => $tipo,  
+        'texto' => $texto  
+    ];  
+}  
 ?>
