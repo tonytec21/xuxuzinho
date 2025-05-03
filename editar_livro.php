@@ -101,8 +101,12 @@ include 'includes/header.php';
                                        class="form-control form-control-sm numero-folha"
                                     value="<?php echo $pg['numero_folha']; ?>">
                             </td>
-                            <td><?php echo $pg['eh_verso'] ? 'Verso' : 'Frente'; ?></td>
-                            <!-- inputs inline -->
+                            <td>
+                                <select class="form-select form-select-sm eh-verso">
+                                    <option value="0" <?php echo $pg['eh_verso'] ? '' : 'selected'; ?>>Frente</option>
+                                    <option value="1" <?php echo $pg['eh_verso'] ? 'selected' : ''; ?>>Verso</option>
+                                </select>
+                            </td>
                             <td>
                                 <input type="number"
                                        class="form-control form-control-sm termo-inicial"
@@ -163,6 +167,7 @@ document.querySelectorAll('.salvar-linha').forEach(btn=>{
         const termoIni   = tr.querySelector('.termo-inicial').value;
         const termoFim   = tr.querySelector('.termo-final').value;
         const numFolha   = tr.querySelector('.numero-folha').value;
+        const ehVerso    = tr.querySelector('.eh-verso').value;
 
         if(!termoIni || !termoFim){Swal.fire('Erro','Preencha ambos os termos.','error');return;}
 
@@ -175,7 +180,8 @@ document.querySelectorAll('.salvar-linha').forEach(btn=>{
                     livro_id:livroId,
                     termo_inicial:termoIni,
                     termo_final:termoFim,
-                    numero_folha:numFolha
+                    numero_folha:numFolha,
+                    eh_verso:ehVerso
                 })
             });
             const data = await resp.json();
@@ -199,8 +205,10 @@ function atualizarTabela(paginas){
         if(!row)return;
         row.querySelector('.termo-inicial').value  = p.termo_inicial;
         row.querySelector('.termo-final').value    = p.termo_final;
-        if (row.querySelector('.numero-folha'))    // segurança
+        if (row.querySelector('.numero-folha'))   
         row.querySelector('.numero-folha').value = p.numero_folha;
+        if (row.querySelector('.eh-verso'))
+        row.querySelector('.eh-verso').value     = p.eh_verso;
     });
 }
 
