@@ -1641,7 +1641,7 @@ function initDataTables() {
                      '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',  
                 pageLength: 10,  
                 lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],  
-                order: [[1, 'asc']],  
+                order: [[1, 'desc']],  
                 // Botões adicionados separadamente para evitar problemas  
                 buttons: []  
             });  
