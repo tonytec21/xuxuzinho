@@ -240,14 +240,6 @@ include 'includes/header.php';
                             <i data-feather="book-open" class="me-2 text-primary" style="width: 20px; height: 20px;"></i>  
                             Visualização do Livro  
                         </h5>  
-                        <!-- <div>  
-                            <button class="btn btn-sm btn-soft-primary rounded-pill px-3 me-2">  
-                                <i data-feather="printer" class="me-1" style="width: 14px; height: 14px;"></i> Imprimir  
-                            </button>  
-                            <button class="btn btn-sm btn-soft-danger rounded-pill px-3">  
-                                <i data-feather="download" class="me-1" style="width: 14px; height: 14px;"></i> Exportar PDF  
-                            </button>  
-                        </div>   -->
                     </div>  
                     <div class="card-body p-0">  
                         <!-- Navegação do Livro - Design Melhorado -->  
@@ -301,15 +293,6 @@ include 'includes/header.php';
                                         Visualizador de Página  
                                     </h5>  
                                     <div class="btn-group">  
-                                        <!-- <button class="btn btn-sm btn-outline-secondary" id="btn-zoom-out">  
-                                            <i data-feather="zoom-out" style="width: 16px; height: 16px;"></i>  
-                                        </button>  
-                                        <button class="btn btn-sm btn-outline-secondary" id="btn-zoom-in">  
-                                            <i data-feather="zoom-in" style="width: 16px; height: 16px;"></i>  
-                                        </button>  
-                                        <button class="btn btn-sm btn-outline-secondary" id="btn-rotate">  
-                                            <i data-feather="rotate-cw" style="width: 16px; height: 16px;"></i>  
-                                        </button>   -->
                                         <button class="btn btn-sm btn-outline-secondary" id="btn-fullscreen">  
                                             <i data-feather="maximize" style="width: 16px; height: 16px;"></i>  
                                         </button>  
@@ -345,8 +328,6 @@ include 'includes/header.php';
         </div> 
           
         <!-- Visualizador com imagem maior - Design Melhorado -->  
-        
-
         <!-- Informações da página atual -->  
         <div class="card border-0 rounded-3 shadow-sm mt-3">  
             <div class="card-body p-3">  
@@ -577,9 +558,6 @@ include 'includes/header.php';
             </div>  
         </div>  
 
-        
-  
-
     <?php else: ?>  
         <!-- Lista de livros -->  
         <div class="row mb-4">  
@@ -614,7 +592,7 @@ include 'includes/header.php';
                             </div>  
                         <?php else: ?>  
                             <div class="table-responsive">  
-                                <table class="table table-hover" id="tabelaLivros">  
+                                <table  id="tabelaLivros" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">  
                                     <thead>  
                                         <tr>  
                                             <th>Tipo</th>  
@@ -812,8 +790,6 @@ include 'includes/header.php';
 </div>  
 <?php endif; ?>  
 
-<!-- JavaScript para funções da página -->  
-
 <script>  
 document.addEventListener('DOMContentLoaded', function() {  
     if (typeof feather !== 'undefined') {  
@@ -844,11 +820,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const paginaAtual = document.getElementById('pagina-atual');  
     const visualizadorDiv = document.getElementById('visualizador-pagina');  
     const btnFullscreen = document.getElementById('btn-fullscreen');  
+    const toggleAnexosBtn = document.getElementById('toggleAnexosBtn');  
+    const listaAnexosContainer = document.getElementById('listaAnexosContainer');  
     
     // Variáveis de estado para o visualizador  
     let paginaAtualId = null;  
     let paginasList = [];  
-    let livroAtualId = document.querySelector('input[name="livro_id"]')?.value;  
+    let livroAtualId = null;  
+    const livroIdElement = document.querySelector('input[name="livro_id"]');  
+    if (livroIdElement) {  
+        livroAtualId = livroIdElement.value;  
+    }  
+    
+    // Variáveis para controle de zoom e rotação  
+    let currentZoom = 100; // porcentagem de zoom atual  
+    let currentRotation = 0; // graus de rotação atual  
+    
+    // Função para aplicar transformações combinadas  
+    function applyTransform(imgElement) {  
+        if (imgElement) {  
+            imgElement.style.transform = `rotate(${currentRotation}deg) scale(${currentZoom/100})`;  
+        }  
+    }  
 
     // Inicializar o visualizador de páginas se estiver na página  
     if (livroAtualId && visualizadorDiv) {  
@@ -890,7 +883,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }  
         
         // Mostrar carregando  
-        visualizadorDiv.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div></div>';  
+        if (visualizadorDiv) {  
+            visualizadorDiv.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Carregando...</span></div></div>';  
+        }  
         
         // Carregar a imagem com timestamp para evitar cache  
         const timestamp = new Date().getTime();  
@@ -900,6 +895,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const img = new Image();  
         img.onload = function() {  
+            if (!visualizadorDiv) return;  
+            
             // Atualizar visualizador  
             visualizadorDiv.innerHTML = '';  
             visualizadorDiv.appendChild(img);  
@@ -907,37 +904,49 @@ document.addEventListener('DOMContentLoaded', function() {
             img.className = 'img-fluid';  
             img.alt = `Página ${pagina.numero_pagina}`;  
             
+            // Reconfigurar os eventos de zoom e rotação para a nova imagem  
+            currentZoom = 100;  
+            currentRotation = 0;  
+            
+            // Aplicar eventos aos botões para a nova imagem  
+            configurarControlesImagem(img);  
+            
             // Atualizar estado  
-            // ----- Folha + lado -----
-            paginaAtualId = pagina.id;
+            paginaAtualId = pagina.id;  
 
-            const folhaTxt = `Folha: ${pagina.numero_folha} (${pagina.eh_verso == 1 ? 'Verso' : 'Frente'})`;
-            document.getElementById('folha-atual').textContent = folhaTxt;
+            // ----- Folha + lado -----  
+            const folhaEl = document.getElementById('folha-atual');  
+            if (folhaEl) {  
+                const folhaTxt = `Folha: ${pagina.numero_folha} (${pagina.eh_verso == 1 ? 'Verso' : 'Frente'})`;  
+                folhaEl.textContent = folhaTxt;  
+            }  
 
-            // ----- Termo(s) -----
-            const termoBox = document.getElementById('termo-atual');
-            if (pagina.termo_inicial == pagina.termo_final) {
-                termoBox.textContent = `Termo: ${pagina.termo_inicial}`;
-            } else {
-                termoBox.textContent = `Termos ${pagina.termo_inicial} – ${pagina.termo_final}`;
-            }
+            // ----- Termo(s) -----  
+            const termoBox = document.getElementById('termo-atual');  
+            if (termoBox) {  
+                if (pagina.termo_inicial == pagina.termo_final) {  
+                    termoBox.textContent = `Termo: ${pagina.termo_inicial}`;  
+                } else {  
+                    termoBox.textContent = `Termos ${pagina.termo_inicial} – ${pagina.termo_final}`;  
+                }  
+            }  
 
-            // Botões de navegação
-            atualizarBotoesNavegacao();
-
-  
+            // Botões de navegação  
+            atualizarBotoesNavegacao();  
         };  
         
         img.onerror = function() {  
             console.error('Erro ao carregar imagem:', imagemUrl);  
-            visualizadorDiv.innerHTML = `  
-                <div class="d-flex justify-content-center align-items-center h-100 w-100">  
-                    <div class="text-center">  
-                        <i class="bx bx-error-circle" style="font-size: 3rem; color: #dc3545;"></i>  
-                        <p class="mt-2">Erro ao carregar imagem</p>  
-                        <small class="text-muted">${imagemUrl}</small>  
-                    </div>  
-                </div>`;  
+            if (visualizadorDiv) {  
+                visualizadorDiv.innerHTML = `  
+                    <div class="d-flex justify-content-center align-items-center h-100 w-100">  
+                        <div class="text-center">  
+                            <i class="bx bx-error-circle" style="font-size: 3rem; color: #dc3545;"></i>  
+                            <p class="mt-2">Erro ao carregar imagem</p>  
+                            <small class="text-muted">${imagemUrl}</small>  
+                        </div>  
+                    </div>`;  
+            }  
         };  
         
         img.src = imagemUrl;  
@@ -972,35 +981,96 @@ document.addEventListener('DOMContentLoaded', function() {
         }  
     }  
     
-    // Navegar por termo
-    document.getElementById('btnIrParaTermo').addEventListener('click', function() {
-        const termo = parseInt(document.getElementById('inputTermoBusca').value);
-        if (isNaN(termo) || paginasList.length === 0) return;
-
-        const pagina = paginasList.find(p => termo >= p.termo_inicial && termo <= p.termo_final);
-        if (pagina) {
-            exibirPagina(pagina.id);
-        } else {
-            showErrorToast('Termo não encontrado em nenhuma página.');
-        }
-    });
-
-    // Navegar por folha
-    document.getElementById('btnIrParaFolha').addEventListener('click', function() {
-        const folha = parseInt(document.getElementById('inputFolhaBusca').value);
-        if (isNaN(folha) || paginasList.length === 0) return;
-
-        // Como cada folha pode ter frente (eh_verso = 0) e verso (eh_verso = 1), vamos tentar ir para o lado frente
-        const pagina = paginasList.find(p => p.numero_folha == folha && p.eh_verso == 0) || 
-                    paginasList.find(p => p.numero_folha == folha);
+    // Configurar os botões de zoom e rotação para uma imagem  
+    function configurarControlesImagem(imgElement) {  
+        if (!imgElement) return;  
         
-        if (pagina) {
-            exibirPagina(pagina.id);
-        } else {
-            showErrorToast('Folha não encontrada.');
-        }
-    });
+        // Implementar botões de zoom  
+        const zoomOut = document.querySelector('[title="Zoom out"]');  
+        const zoomReset = document.querySelector('[title="Ajustar à tela"]');  
+        const zoomIn = document.querySelector('[title="Zoom in"]');  
+        
+        if (zoomOut) {  
+            zoomOut.onclick = function() {  
+                currentZoom = Math.max(50, currentZoom - 25);  
+                applyTransform(imgElement);  
+            };  
+        }  
+        
+        if (zoomReset) {  
+            zoomReset.onclick = function() {  
+                currentZoom = 100;  
+                currentRotation = 0;  
+                applyTransform(imgElement);  
+            };  
+        }  
+        
+        if (zoomIn) {  
+            zoomIn.onclick = function() {  
+                currentZoom = Math.min(200, currentZoom + 25);  
+                applyTransform(imgElement);  
+            };  
+        }  
+        
+        // Implementação dos botões de rotação  
+        const rotateLeft = document.querySelector('[title="Girar para esquerda"]');  
+        const rotateRight = document.querySelector('[title="Girar para direita"]');  
+        
+        if (rotateLeft) {  
+            rotateLeft.onclick = function() {  
+                currentRotation = (currentRotation - 90) % 360;  
+                applyTransform(imgElement);  
+            };  
+        }  
+        
+        if (rotateRight) {  
+            rotateRight.onclick = function() {  
+                currentRotation = (currentRotation + 90) % 360;  
+                applyTransform(imgElement);  
+            };  
+        }  
+    }  
+    
+    // Navegar por termo  
+    const btnIrParaTermo = document.getElementById('btnIrParaTermo');  
+    if (btnIrParaTermo) {  
+        btnIrParaTermo.addEventListener('click', function() {  
+            const inputTermoBusca = document.getElementById('inputTermoBusca');  
+            if (!inputTermoBusca) return;  
+            
+            const termo = parseInt(inputTermoBusca.value);  
+            if (isNaN(termo) || paginasList.length === 0) return;  
 
+            const pagina = paginasList.find(p => termo >= p.termo_inicial && termo <= p.termo_final);  
+            if (pagina) {  
+                exibirPagina(pagina.id);  
+            } else {  
+                showErrorToast('Termo não encontrado em nenhuma página.');  
+            }  
+        });  
+    }  
+
+    // Navegar por folha  
+    const btnIrParaFolha = document.getElementById('btnIrParaFolha');  
+    if (btnIrParaFolha) {  
+        btnIrParaFolha.addEventListener('click', function() {  
+            const inputFolhaBusca = document.getElementById('inputFolhaBusca');  
+            if (!inputFolhaBusca) return;  
+            
+            const folha = parseInt(inputFolhaBusca.value);  
+            if (isNaN(folha) || paginasList.length === 0) return;  
+
+            // Como cada folha pode ter frente (eh_verso = 0) e verso (eh_verso = 1), vamos tentar ir para o lado frente  
+            const pagina = paginasList.find(p => p.numero_folha == folha && p.eh_verso == 0) ||   
+                        paginasList.find(p => p.numero_folha == folha);  
+            
+            if (pagina) {  
+                exibirPagina(pagina.id);  
+            } else {  
+                showErrorToast('Folha não encontrada.');  
+            }  
+        });  
+    }  
 
     // Event listeners para navegação  
     if (btnAnterior) {  
@@ -1026,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }  
     
     // Event listener para modo tela cheia  
-    if (btnFullscreen) {  
+    if (btnFullscreen && visualizadorDiv) {  
         btnFullscreen.addEventListener('click', function() {  
             if (visualizadorDiv.requestFullscreen) {  
                 visualizadorDiv.requestFullscreen();  
@@ -1099,6 +1169,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }  
 
     function handleFiles(files) {  
+        if (!filePreviewContainer || !filePreviewList || !submitBtn) return;  
+        
         if (files.length > 0) {  
             filePreviewContainer.classList.remove('d-none');  
             filePreviewList.innerHTML = '';  
@@ -1145,10 +1217,13 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {  
                 document.querySelectorAll('.remove-file').forEach(btn => {  
                     btn.addEventListener('click', function() {  
-                        this.closest('.file-item').remove();  
-                        if (filePreviewList.children.length === 0) {  
-                            filePreviewContainer.classList.add('d-none');  
-                            submitBtn.disabled = true;  
+                        const item = this.closest('.file-item');  
+                        if (item) {  
+                            item.remove();  
+                            if (filePreviewList.children.length === 0) {  
+                                filePreviewContainer.classList.add('d-none');  
+                                submitBtn.disabled = true;  
+                            }  
                         }  
                     });  
                 });  
@@ -1167,9 +1242,11 @@ document.addEventListener('DOMContentLoaded', function() {
         uploadForm.addEventListener('submit', function(e) {  
             e.preventDefault();  
 
+            if (!inputElement || !filePreviewList || !progressContainer || !submitBtn) return;  
+
             const files = Array.from(inputElement.files).filter(file => {  
                 const fileNames = Array.from(filePreviewList.querySelectorAll('.file-item')).map(item =>  
-                    item.querySelector('.fw-semibold').textContent);  
+                    item.querySelector('.fw-semibold')?.textContent);  
                 return fileNames.includes(file.name);  
             });  
 
@@ -1190,7 +1267,13 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.disabled = true;  
 
             const formData = new FormData();  
-            formData.append('livro_id', document.querySelector('input[name="livro_id"]').value);  
+            const livroIdInput = document.querySelector('input[name="livro_id"]');  
+            if (livroIdInput) {  
+                formData.append('livro_id', livroIdInput.value);  
+            } else {  
+                showErrorToast('ID do livro não encontrado.');  
+                return;  
+            }  
 
             files.forEach(file => {  
                 formData.append('arquivos[]', file);  
@@ -1199,16 +1282,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const xhr = new XMLHttpRequest();  
 
             xhr.upload.addEventListener('progress', function(e) {  
-                if (e.lengthComputable) {  
+                if (e.lengthComputable && progressBar) {  
                     const percentComplete = Math.round((e.loaded / e.total) * 100);  
                     progressBar.style.width = percentComplete + '%';  
                     progressBar.textContent = percentComplete + '%';  
                     progressBar.setAttribute('aria-valuenow', percentComplete);  
 
-                    if (percentComplete < 100) {  
-                        uploadStatus.textContent = 'Enviando arquivos... ' + percentComplete + '%';  
-                    } else {  
-                        uploadStatus.textContent = 'Processando arquivos, aguarde...';  
+                    if (uploadStatus) {  
+                        if (percentComplete < 100) {  
+                            uploadStatus.textContent = 'Enviando arquivos... ' + percentComplete + '%';  
+                        } else {  
+                            uploadStatus.textContent = 'Processando arquivos, aguarde...';  
+                        }  
                     }  
                 }  
             });  
@@ -1230,32 +1315,32 @@ document.addEventListener('DOMContentLoaded', function() {
                             } else {  
                                 showErrorToast(response.message || 'Erro ao processar os arquivos.');  
                             }  
-                            progressContainer.classList.add('d-none');  
-                            submitBtn.disabled = false;  
+                            if (progressContainer) progressContainer.classList.add('d-none');  
+                            if (submitBtn) submitBtn.disabled = false;  
                         }  
                     } catch (e) {  
                         console.error('Erro ao processar resposta:', e, xhr.responseText);  
                         showErrorToast('Erro ao processar resposta do servidor.');  
-                        progressContainer.classList.add('d-none');  
-                        submitBtn.disabled = false;  
+                        if (progressContainer) progressContainer.classList.add('d-none');  
+                        if (submitBtn) submitBtn.disabled = false;  
                     }  
                 } else {  
                     showErrorToast('Erro ao enviar arquivos. Código: ' + xhr.status);  
-                    progressContainer.classList.add('d-none');  
-                    submitBtn.disabled = false;  
+                    if (progressContainer) progressContainer.classList.add('d-none');  
+                    if (submitBtn) submitBtn.disabled = false;  
                 }  
             });  
 
             xhr.addEventListener('error', function() {  
                 showErrorToast('Erro de conexão. Verifique sua internet e tente novamente.');  
-                progressContainer.classList.add('d-none');  
-                submitBtn.disabled = false;  
+                if (progressContainer) progressContainer.classList.add('d-none');  
+                if (submitBtn) submitBtn.disabled = false;  
             });  
 
             xhr.addEventListener('timeout', function() {  
                 showErrorToast('A requisição demorou muito tempo. Verifique sua conexão e tente novamente.');  
-                progressContainer.classList.add('d-none');  
-                submitBtn.disabled = false;  
+                if (progressContainer) progressContainer.classList.add('d-none');  
+                if (submitBtn) submitBtn.disabled = false;  
             });  
 
             xhr.open('POST', 'upload_livro.php', true);  
@@ -1263,23 +1348,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });  
     }  
 
-    function showSuccessToast(message) {
-        Swal.fire({
-            icon: 'success',
-            title: 'Sucesso',
-            text: message,
-            confirmButtonColor: '#4caf50'
-        });
-    }
+    function showSuccessToast(message) {  
+        if (typeof Swal !== 'undefined') {  
+            Swal.fire({  
+                icon: 'success',  
+                title: 'Sucesso',  
+                text: message,  
+                confirmButtonColor: '#4caf50'  
+            });  
+        } else {  
+            alert('Sucesso: ' + message);  
+        }  
+    }  
 
-    function showErrorToast(message) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Erro',
-            text: message,
-            confirmButtonColor: '#f44336'
-        });
-    }
+    function showErrorToast(message) {  
+        if (typeof Swal !== 'undefined') {  
+            Swal.fire({  
+                icon: 'error',  
+                title: 'Erro',  
+                text: message,  
+                confirmButtonColor: '#f44336'  
+            });  
+        } else {  
+            alert('Erro: ' + message);  
+        }  
+    }  
 
     // Função para verificar o caminho de uma imagem  
     function verificarImagem(url) {  
@@ -1390,115 +1483,46 @@ document.addEventListener('DOMContentLoaded', function() {
             }  
         }, 3000);  
     }  
+    
+    // Toggle para anexos  
+    if (toggleAnexosBtn && listaAnexosContainer) {  
+        toggleAnexosBtn.addEventListener('click', function() {  
+            const visivel = listaAnexosContainer.style.display === 'block';  
+            listaAnexosContainer.style.display = visivel ? 'none' : 'block';  
+            toggleAnexosBtn.innerHTML = visivel  
+                ? '<i data-feather="chevron-down" class="me-1"></i> Exibir Lista de Anexos'  
+                : '<i data-feather="chevron-up" class="me-1"></i> Ocultar Lista de Anexos';  
+            if (typeof feather !== 'undefined') {  
+                feather.replace();  
+            }  
+        });  
+    }  
+    
+    // Toggle para área de upload usando jQuery se disponível  
+    if (typeof $ === 'function') {  
+        $('#toggleUploadArea').on('click', function() {  
+            const container = $('#uploadAreaContainer');  
+            const btn = $(this);  
+            const isVisible = container.is(':visible');  
+
+            container.slideToggle(200, function() {  
+                const icon = isVisible ? 'chevron-down' : 'chevron-up';  
+                const label = isVisible ? 'Exibir Área de Upload' : 'Ocultar Área de Upload';  
+
+                btn.html(`<i data-feather="${icon}" class="me-1"></i> ${label}`);  
+                if (typeof feather !== 'undefined') {  
+                    feather.replace();  
+                }  
+            });  
+        });  
+    }  
 });  
-
-// Script para gerenciar visualização de imagens  
-document.addEventListener('DOMContentLoaded', function() {  
-    const visualizador = document.getElementById('visualizador-pagina');  
-    const imagem = document.getElementById('imagem-pagina');  
-    let currentZoom = 100; // porcentagem de zoom atual  
-    
-    // Remover a classe d-none quando a imagem carregar  
-    if (imagem) {  
-        // Para imagens que já estão carregadas  
-        if (imagem.complete && imagem.naturalHeight !== 0) {  
-            imagem.classList.remove('d-none');  
-        }  
-        
-        // Para imagens que ainda vão carregar  
-        imagem.onload = function() {  
-            imagem.classList.remove('d-none');  
-        };  
-    }  
-    
-    // Fullscreen toggle  
-    document.getElementById('btn-fullscreen')?.addEventListener('click', function() {  
-        visualizador.classList.toggle('fullscreen-mode');  
-        
-        const icon = this.querySelector('i');  
-        if (visualizador.classList.contains('fullscreen-mode')) {  
-            icon.classList.remove('bx-fullscreen');  
-            icon.classList.add('bx-exit-fullscreen');  
-        } else {  
-            icon.classList.remove('bx-exit-fullscreen');  
-            icon.classList.add('bx-fullscreen');  
-        }  
-    });  
-    
-    // Implementação dos botões de zoom  
-    const zoomOut = document.querySelector('[title="Zoom out"]');  
-    const zoomReset = document.querySelector('[title="Ajustar à tela"]');  
-    const zoomIn = document.querySelector('[title="Zoom in"]');  
-    
-    if (zoomOut && zoomReset && zoomIn && imagem) {  
-        zoomOut.addEventListener('click', function() {  
-            currentZoom = Math.max(50, currentZoom - 25);  
-            imagem.style.transform = `scale(${currentZoom/100})`;  
-        });  
-        
-        zoomReset.addEventListener('click', function() {  
-            currentZoom = 100;  
-            imagem.style.transform = 'scale(1)';  
-        });  
-        
-        zoomIn.addEventListener('click', function() {  
-            currentZoom = Math.min(200, currentZoom + 25);  
-            imagem.style.transform = `scale(${currentZoom/100})`;  
-        });  
-    }  
-    
-    // Implementação dos botões de rotação  
-    const rotateLeft = document.querySelector('[title="Girar para esquerda"]');  
-    const rotateRight = document.querySelector('[title="Girar para direita"]');  
-    let currentRotation = 0;  
-    
-    if (rotateLeft && rotateRight && imagem) {  
-        rotateLeft.addEventListener('click', function() {  
-            currentRotation = (currentRotation - 90) % 360;  
-            imagem.style.transform = `rotate(${currentRotation}deg) scale(${currentZoom/100})`;  
-        });  
-        
-        rotateRight.addEventListener('click', function() {  
-            currentRotation = (currentRotation + 90) % 360;  
-            imagem.style.transform = `rotate(${currentRotation}deg) scale(${currentZoom/100})`;  
-        });  
-    }  
-});
-
-const toggleAnexosBtn = document.getElementById('toggleAnexosBtn');
-const listaAnexosContainer = document.getElementById('listaAnexosContainer');
-
-if (toggleAnexosBtn && listaAnexosContainer) {
-    toggleAnexosBtn.addEventListener('click', function () {
-        const visivel = listaAnexosContainer.style.display === 'block';
-        listaAnexosContainer.style.display = visivel ? 'none' : 'block';
-        toggleAnexosBtn.innerHTML = visivel
-            ? '<i data-feather="chevron-down" class="me-1"></i> Exibir Lista de Anexos'
-            : '<i data-feather="chevron-up" class="me-1"></i> Ocultar Lista de Anexos';
-        feather.replace();
-    });
-}
-
-$(document).ready(function () {
-    $('#toggleUploadArea').on('click', function () {
-        const container = $('#uploadAreaContainer');
-        const btn = $(this);
-        const isVisible = container.is(':visible');
-
-        container.slideToggle(200, function () {
-            const icon = isVisible ? 'chevron-down' : 'chevron-up';
-            const label = isVisible ? 'Exibir Área de Upload' : 'Ocultar Área de Upload';
-
-            btn.html(`<i data-feather="${icon}" class="me-1"></i> ${label}`);
-            feather.replace();
-        });
-    });
-});
-
 
 function atualizarNavegacao(folha, termo) {  
     const folhaEl = document.getElementById('folha-atual');  
     const termoEl = document.getElementById('termo-atual');  
+    
+    if (!folhaEl || !termoEl) return;  
     
     // Remover classe de animação  
     folhaEl.classList.remove('highlight-change');  
@@ -1517,6 +1541,162 @@ function atualizarNavegacao(folha, termo) {
     termoEl.classList.add('highlight-change');  
 }  
 
+// Verifica se o jQuery já está carregado  
+if (typeof jQuery === 'undefined') {  
+    const jqueryScript = document.createElement('script');  
+    jqueryScript.src = 'https://code.jquery.com/jquery-3.6.0.min.js';  
+    jqueryScript.onload = function() {  
+        console.log('jQuery carregado dinamicamente');  
+        // Carrega os scripts do DataTables após garantir que o jQuery está disponível  
+        carregarScriptsDataTables();  
+    };  
+    document.head.appendChild(jqueryScript);  
+} else {  
+    // Se jQuery já estiver disponível, carrega os scripts do DataTables  
+    carregarScriptsDataTables();  
+}  
+
+// Função para carregar scripts do DataTables sequencialmente  
+function carregarScriptsDataTables() {  
+    const scripts = [  
+        'https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js',  
+        'https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js',  
+        'https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js',  
+        'https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js',  
+        'https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js',  
+        'https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js',  
+        'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',  
+        'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js',  
+        'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js',  
+        'https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js',  
+        'https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js',  
+        'https://cdn.datatables.net/buttons/2.3.6/js/buttons.colvis.min.js'  
+    ];  
+    
+    let scriptIndex = 0;  
+    
+    function carregarProximoScript() {  
+        if (scriptIndex >= scripts.length) {  
+            // Todos os scripts foram carregados, initialize o DataTables  
+            setTimeout(function() {  
+                initDataTables();  
+            }, 500);  
+            return;  
+        }  
+        
+        const script = document.createElement('script');  
+        script.src = scripts[scriptIndex];  
+        script.onload = function() {  
+            console.log(`Script carregado: ${scripts[scriptIndex]}`);  
+            scriptIndex++;  
+            carregarProximoScript();  
+        };  
+        script.onerror = function() {  
+            console.error(`Erro ao carregar script: ${scripts[scriptIndex]}`);  
+            // Continua carregando os próximos scripts mesmo se um falhar  
+            scriptIndex++;  
+            carregarProximoScript();  
+        };  
+        document.head.appendChild(script);  
+    }  
+    
+    // Inicia o carregamento sequencial  
+    carregarProximoScript();  
+}  
+
+// Função para inicializar o DataTables  
+// Função para inicializar o DataTables  
+function initDataTables() {  
+    if (typeof $ === 'function' && typeof $.fn !== 'undefined' && typeof $.fn.DataTable === 'function') {  
+        console.log('DataTables disponível, verificando inicialização...');  
+        
+        const tabelaLivros = document.getElementById('tabelaLivros');  
+        if (tabelaLivros) {  
+            try {  
+                // Verifica se a tabela já foi inicializada como DataTable  
+                if ($.fn.dataTable.isDataTable('#tabelaLivros')) {  
+                    console.log('Tabela já inicializada como DataTable, pulando inicialização');  
+                    return;  
+                }  
+                
+                console.log('Inicializando DataTable...');  
+                var table = $('#tabelaLivros').DataTable({  
+                    responsive: true,  
+                    language: {  
+                        url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'  
+                    },  
+                    dom: 'Bfrtip',  
+                    buttons: [  
+                        {  
+                            extend: 'copy',  
+                            text: 'Copiar',  
+                            className: 'btn btn-sm btn-outline-secondary'  
+                        },  
+                        {  
+                            extend: 'excel',  
+                            text: 'Excel',  
+                            className: 'btn btn-sm btn-outline-success'  
+                        },  
+                        {  
+                            extend: 'pdf',  
+                            text: 'PDF',  
+                            className: 'btn btn-sm btn-outline-danger'  
+                        },  
+                        {  
+                            extend: 'print',  
+                            text: 'Imprimir',  
+                            className: 'btn btn-sm btn-outline-primary'  
+                        },  
+                        {  
+                            extend: 'colvis',  
+                            text: 'Colunas',  
+                            className: 'btn btn-sm btn-outline-info'  
+                        }  
+                    ],  
+                    pageLength: 10,  
+                    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],  
+                    order: [[1, 'asc']]  
+                });  
+                console.log('DataTable inicializado com sucesso');  
+            } catch (e) {  
+                console.error('Erro ao inicializar DataTable:', e);  
+            }  
+        } else {  
+            console.warn('Tabela #tabelaLivros não encontrada');  
+        }  
+    } else {  
+        console.error('DataTables não está disponível');  
+        if (typeof $ !== 'function') console.error('jQuery não está disponível');  
+        else if (typeof $.fn === 'undefined') console.error('jQuery.fn não está disponível');  
+        else if (typeof $.fn.DataTable !== 'function') console.error('DataTable não está disponível em jQuery');  
+    }  
+} 
+
+// Espera o DOM carregar e tenta inicializar o DataTables  
+let dataTablesInitialized = false;  
+document.addEventListener('DOMContentLoaded', function() {  
+    console.log('DOM carregado, verificando existência do jQuery e DataTables');  
+    
+    // Verifica periodicamente se o DataTables já está disponível  
+    let tentativas = 0;  
+    const maxTentativas = 10;  
+    const intervalo = setInterval(function() {  
+        tentativas++;  
+        console.log(`Tentativa ${tentativas} de inicializar o DataTables`);  
+        
+        if (typeof $ === 'function' && typeof $.fn !== 'undefined' && typeof $.fn.DataTable === 'function') {  
+            console.log('DataTables disponível, inicializando...');  
+            if (!dataTablesInitialized) {  
+                initDataTables();  
+                dataTablesInitialized = true;  
+            }  
+            clearInterval(intervalo);  
+        } else if (tentativas >= maxTentativas) {  
+            console.error('Número máximo de tentativas excedido. DataTables não inicializado.');  
+            clearInterval(intervalo);  
+        }  
+    }, 500);  
+});
 </script>
 
 <?php include 'includes/footer.php'; ?>   
