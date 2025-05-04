@@ -1570,7 +1570,7 @@ function carregarScriptsDataTables() {
         'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js',  
         'https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js',  
         'https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js',  
-        'https://cdn.datatables.net/buttons/2.3.6/js/buttons.colvis.min.js'  
+        'js/buttons.colvis.min.js'  
     ];  
     
     let scriptIndex = 0;  
@@ -1604,28 +1604,51 @@ function carregarScriptsDataTables() {
     carregarProximoScript();  
 }  
 
-// Função para inicializar o DataTables  
-// Função para inicializar o DataTables  
+// Função para inicializar o DataTables corretamente  
 function initDataTables() {  
     if (typeof $ === 'function' && typeof $.fn !== 'undefined' && typeof $.fn.DataTable === 'function') {  
         console.log('DataTables disponível, verificando inicialização...');  
         
         const tabelaLivros = document.getElementById('tabelaLivros');  
-        if (tabelaLivros) {  
-            try {  
-                // Verifica se a tabela já foi inicializada como DataTable  
-                if ($.fn.dataTable.isDataTable('#tabelaLivros')) {  
-                    console.log('Tabela já inicializada como DataTable, pulando inicialização');  
-                    return;  
-                }  
-                
-                console.log('Inicializando DataTable...');  
-                var table = $('#tabelaLivros').DataTable({  
-                    responsive: true,  
-                    language: {  
-                        url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'  
-                    },  
-                    dom: 'Bfrtip',  
+        if (!tabelaLivros) {  
+            // Se a tabela não tiver um ID específico, tente selecionar a primeira tabela disponível  
+            if ($('table').length > 0) {  
+                // Adiciona o ID à primeira tabela encontrada  
+                $('table').first().attr('id', 'tabelaLivros');  
+                console.log('ID tabelaLivros adicionado à primeira tabela disponível');  
+            } else {  
+                console.warn('Nenhuma tabela encontrada na página');  
+                return;  
+            }  
+        }  
+        
+        try {  
+            // Verifica se a tabela já foi inicializada como DataTable  
+            if ($.fn.dataTable.isDataTable('#tabelaLivros')) {  
+                console.log('Destruindo instância anterior do DataTable');  
+                $('#tabelaLivros').DataTable().destroy();  
+            }  
+            
+            console.log('Inicializando DataTable com configuração completa...');  
+            var table = $('#tabelaLivros').DataTable({  
+                responsive: true,  
+                language: {  
+                    url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'  
+                },  
+                // Configuração padrão para mostrar todos os controles  
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +  
+                     '<"row"<"col-sm-12"tr>>' +  
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',  
+                pageLength: 10,  
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],  
+                order: [[1, 'asc']],  
+                // Botões adicionados separadamente para evitar problemas  
+                buttons: []  
+            });  
+            
+            // Adiciona os botões após a inicialização, se o plugin de botões estiver disponível  
+            if (typeof $.fn.DataTable.Buttons !== 'undefined') {  
+                new $.fn.DataTable.Buttons(table, {  
                     buttons: [  
                         {  
                             extend: 'copy',  
@@ -1646,23 +1669,27 @@ function initDataTables() {
                             extend: 'print',  
                             text: 'Imprimir',  
                             className: 'btn btn-sm btn-outline-primary'  
-                        },  
-                        {  
-                            extend: 'colvis',  
-                            text: 'Colunas',  
-                            className: 'btn btn-sm btn-outline-info'  
                         }  
-                    ],  
-                    pageLength: 10,  
-                    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],  
-                    order: [[1, 'asc']]  
+                    ]  
                 });  
-                console.log('DataTable inicializado com sucesso');  
-            } catch (e) {  
-                console.error('Erro ao inicializar DataTable:', e);  
+                
+                // Adiciona o botão 'colvis' apenas se o arquivo de script estiver carregado  
+                if (typeof $.fn.DataTable.ext.buttons.colvis !== 'undefined') {  
+                    new $.fn.DataTable.Buttons(table, {  
+                        buttons: [  
+                            {  
+                                extend: 'colvis',  
+                                text: 'Colunas',  
+                                className: 'btn btn-sm btn-outline-info'  
+                            }  
+                        ]  
+                    });  
+                }  
             }  
-        } else {  
-            console.warn('Tabela #tabelaLivros não encontrada');  
+            
+            console.log('DataTable inicializado com sucesso');  
+        } catch (e) {  
+            console.error('Erro ao inicializar DataTable:', e);  
         }  
     } else {  
         console.error('DataTables não está disponível');  
@@ -1670,7 +1697,7 @@ function initDataTables() {
         else if (typeof $.fn === 'undefined') console.error('jQuery.fn não está disponível');  
         else if (typeof $.fn.DataTable !== 'function') console.error('DataTable não está disponível em jQuery');  
     }  
-} 
+}  
 
 // Espera o DOM carregar e tenta inicializar o DataTables  
 let dataTablesInitialized = false;  
