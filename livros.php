@@ -103,7 +103,7 @@ include 'includes/header.php';
                     <i data-feather="list" class="me-1" style="width: 14px; height: 14px;"></i>  
                     Listar Todos  
                 </a>  
-                <a href="editar_livro.php?id=<?php echo $livro_atual['id']; ?>" class="btn btn-primary">
+                <a href="editar_livro.php?id=<?php echo $livro_atual['id']; ?>" class="btn btn-outline-primary">
                     <i data-feather="edit" class="me-1" style="width:14px;height:14px;"></i>
                     Editar Livro
                 </a>
