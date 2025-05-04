@@ -90,6 +90,7 @@ include 'includes/header.php';
                         <th>Termo&nbsp;Final</th>
                         <th>Imagem</th>
                         <th>Substituir</th>
+                        <th>Excluir</th>
                         <th class="text-end">Ações</th>
                     </tr>
                     </thead>
@@ -130,6 +131,12 @@ include 'includes/header.php';
                                 <button type="button"
                                         class="btn btn-sm btn-outline-warning trocar-img">
                                     <i data-feather="upload" style="width:14px;height:14px;"></i>
+                                </button>
+                            </td>
+                            <td>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-danger excluir-linha">
+                                    <i data-feather="trash-2" style="width:14px;height:14px;"></i>
                                 </button>
                             </td>
                             <td class="text-end">
@@ -265,6 +272,45 @@ document.querySelectorAll('.trocar-img').forEach(btn=>{
                 fileInput.value='';   // limpa
             }
         };
+    });
+});
+
+/* ────────  E)  JS: excluir folha ──────── */
+document.querySelectorAll('.excluir-linha').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+
+        const tr        = btn.closest('tr');
+        const paginaId  = tr.dataset.id;
+
+        Swal.fire({
+            title:'Excluir esta folha?',
+            text:'O arquivo será movido para "imagens_excluidas" e o registro apagado.',
+            icon:'warning',
+            showCancelButton:true,
+            confirmButtonText:'Sim, excluir',
+            cancelButtonText:'Cancelar'
+        }).then(async (result)=>{
+            if(!result.isConfirmed) return;
+
+            const form = new URLSearchParams();
+            form.append('livro_id', livroId);
+            form.append('pagina_id',paginaId);
+
+            try{
+                const res  = await fetch('delete_folha.php',
+                                         {method:'POST',body:form});
+                const data = await res.json();
+                if(data.success){
+                    Swal.fire('Excluída!','Folha removida com sucesso.','success');
+                    tr.remove();                 // tira da tela
+                }else{
+                    Swal.fire('Erro',data.message,'error');
+                }
+            }catch(e){
+                console.error(e);
+                Swal.fire('Erro','Falha na exclusão.','error');
+            }
+        });
     });
 });
 
