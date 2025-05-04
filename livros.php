@@ -599,7 +599,7 @@ include 'includes/header.php';
                                             <th>Número</th>  
                                             <th>Folhas</th>  
                                             <th>Termos</th>  
-                                            <!-- <th>Data de Cadastro</th>   -->
+                                            <th>Notas</th>  
                                             <th>Anexos</th>  
                                             <th>Páginas</th>  
                                             <th class="text-end">Ações</th>  
@@ -634,7 +634,8 @@ include 'includes/header.php';
                                                     
                                                     echo $livro['termo_inicial'] . ' - ' . $termo_final;  
                                                     ?>  
-                                                </td>  
+                                                </td> 
+                                                <td><?php echo htmlspecialchars($livro['notas']); ?></td>  
                                                 <td>  
                                                     <span class="badge bg-light text-dark">  
                                                         <?php echo $livro['total_anexos']; ?> anexos  
