@@ -89,6 +89,7 @@ include 'includes/header.php';
                         <th>Termo&nbsp;Inicial</th>
                         <th>Termo&nbsp;Final</th>
                         <th>Imagem</th>
+                        <th>Substituir</th>
                         <th class="text-end">Ações</th>
                     </tr>
                     </thead>
@@ -122,6 +123,13 @@ include 'includes/header.php';
                                         class="btn btn-sm btn-outline-secondary visualizar-img"
                                         data-img="<?= htmlspecialchars($pg['caminho']); ?>">
                                     <i data-feather="eye" style="width:14px;height:14px;"></i>
+                                </button>
+                            </td>
+                            <td>
+                                <input type="file" class="d-none file-swap" accept=".jpg,.jpeg,.png,.pdf">
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-warning trocar-img">
+                                    <i data-feather="upload" style="width:14px;height:14px;"></i>
                                 </button>
                             </td>
                             <td class="text-end">
@@ -220,6 +228,43 @@ document.querySelectorAll('.visualizar-img').forEach(btn=>{
         img.src = src + '?t=' + Date.now();       // evita cache
         const modal = new bootstrap.Modal(document.getElementById('modalImagem'));
         modal.show();
+    });
+});
+
+/* ────────  D)  JS: trocar imagem / anexo ──────── */
+document.querySelectorAll('.trocar-img').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        const tr   = btn.closest('tr');
+        const fileInput = tr.querySelector('.file-swap');
+        fileInput.click();
+
+        fileInput.onchange = async () =>{
+            if(!fileInput.files[0]) return;
+
+            const form = new FormData();
+            form.append('pagina_id', tr.dataset.id);
+            form.append('livro_id',  livroId);
+            form.append('novo_arquivo', fileInput.files[0]);
+
+            try{
+                const res  = await fetch('substituir_anexo.php',{method:'POST',body:form});
+                const data = await res.json();
+                if(data.success){
+                    Swal.fire('Sucesso','Imagem substituída.','success');
+                    // atualiza caminho no botão visualizar
+                    btn.closest('tr')
+                       .querySelector('.visualizar-img')
+                       .dataset.img = data.novo_caminho;
+                }else{
+                    Swal.fire('Erro',data.message,'error');
+                }
+            }catch(e){
+                console.error(e);
+                Swal.fire('Erro','Falha no envio.','error');
+            }finally{
+                fileInput.value='';   // limpa
+            }
+        };
     });
 });
 
