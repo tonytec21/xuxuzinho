@@ -911,13 +911,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // ----- Folha + lado -----
             paginaAtualId = pagina.id;
 
-            const folhaTxt = `Folha ${pagina.numero_folha} (${pagina.eh_verso == 1 ? 'Verso' : 'Frente'})`;
+            const folhaTxt = `Folha: ${pagina.numero_folha} (${pagina.eh_verso == 1 ? 'Verso' : 'Frente'})`;
             document.getElementById('folha-atual').textContent = folhaTxt;
 
             // ----- Termo(s) -----
             const termoBox = document.getElementById('termo-atual');
             if (pagina.termo_inicial == pagina.termo_final) {
-                termoBox.textContent = `Termo ${pagina.termo_inicial}`;
+                termoBox.textContent = `Termo: ${pagina.termo_inicial}`;
             } else {
                 termoBox.textContent = `Termos ${pagina.termo_inicial} – ${pagina.termo_final}`;
             }
