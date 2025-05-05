@@ -2249,7 +2249,7 @@ body {
 <style>  
 /* Estilos elegantes e responsivos */  
 .card-body.bg-light {  
-    background-color: #f8fafc !important;  
+    background-color: #f8fafc;  
     border-radius: 10px;  
 }  
 
@@ -2307,12 +2307,24 @@ body {
     min-width: 120px;  
 }  
 
-.badge.bg-primary {  
+/* .badge.bg-primary {  
     background-color: rgba(67, 97, 238, 0.1) !important;  
-}  
+}   */
+
+[data-bs-theme="dark"] .card-body.bg-light {
+  background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .badge.text-primary {
+  color: #fff!important;
+}
+
+[data-bs-theme="dark"] .text-primary {
+  color: #fff!important;
+}
 
 .badge.text-primary {  
-    color: #4361ee !important;  
+    color: #4361ee;  
 }  
 
 /* Responsividade */  
