@@ -6,7 +6,9 @@ require_once 'includes/functions.php';
 $titulo_pagina = "Gerenciamento de Livros";  
 
 // Filtros  
-$filtro_tipo = isset($_GET['tipo']) ? $_GET['tipo'] : 'todos';  
+$filtro_tipo = $_GET['tipo'] ?? 'todos';  
+$filtro_numero = $_GET['numero_livro'] ?? '';  
+$filtro_termo = $_GET['termo'] ?? '';  
 
 // Processar cadastro de novo livro  
 if (isset($_POST['cadastrar_livro'])) {  
@@ -17,16 +19,16 @@ if (isset($_POST['cadastrar_livro'])) {
     $termo_inicial = $_POST['termo_inicial'];  
     $termos_por_pagina = $_POST['termos_por_pagina'];  
     $notas = $_POST['notas'] ?? '';  
-    
+
     try {  
         $stmt = $pdo->prepare("INSERT INTO livros (tipo, numero, qtd_folhas, contagem_frente_verso, termo_inicial, termos_por_pagina, notas, usuario_id)   
                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)");  
-        
+
         $stmt->execute([$tipo, $numero, $qtd_folhas, $contagem_frente_verso, $termo_inicial, $termos_por_pagina, $notas, $_SESSION['user_id']]);  
-        
+
         $_SESSION['mensagem'] = "Livro cadastrado com sucesso!";  
         $_SESSION['tipo_mensagem'] = "success";  
-        
+
         header("Location: livros.php");  
         exit;  
     } catch (PDOException $e) {  
@@ -35,24 +37,40 @@ if (isset($_POST['cadastrar_livro'])) {
     }  
 }  
 
-// Consulta para buscar livros com contagem de anexos  
+// Consulta com filtros  
 $sql = "SELECT l.*,   
         (SELECT COUNT(*) FROM anexos_livros WHERE livro_id = l.id) as total_anexos,  
         (SELECT COUNT(*) FROM paginas_livro p JOIN anexos_livros a ON p.anexo_id = a.id WHERE a.livro_id = l.id) as total_paginas  
         FROM livros l";  
 
+$where = [];  
+$params = [];  
+
 if ($filtro_tipo !== 'todos') {  
-    $sql .= " WHERE l.tipo = :tipo";  
+    $where[] = 'l.tipo = :tipo';  
+    $params[':tipo'] = $filtro_tipo;  
+}  
+
+if (!empty($filtro_numero)) {  
+    $where[] = 'l.numero LIKE :numero';  
+    $params[':numero'] = '%' . $filtro_numero . '%';  
+}  
+
+if (!empty($filtro_termo) && is_numeric($filtro_termo)) {  
+    $where[] = 'CAST(:termo AS UNSIGNED) BETWEEN l.termo_inicial AND (l.termo_inicial + (l.qtd_folhas * l.termos_por_pagina) - 1)';  
+    $params[':termo'] = $filtro_termo;  
+}  
+
+if (!empty($where)) {  
+    $sql .= ' WHERE ' . implode(' AND ', $where);  
 }  
 
 $sql .= " ORDER BY l.data_cadastro DESC";  
 
 $stmt = $pdo->prepare($sql);  
-
-if ($filtro_tipo !== 'todos') {  
-    $stmt->bindParam(':tipo', $filtro_tipo);  
+foreach ($params as $key => $val) {  
+    $stmt->bindValue($key, $val);  
 }  
-
 $stmt->execute();  
 $livros = $stmt->fetchAll(PDO::FETCH_ASSOC);  
 
@@ -62,11 +80,11 @@ $anexos = [];
 
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {  
     $livro_id = $_GET['id'];  
-    
+
     $stmt = $pdo->prepare("SELECT * FROM livros WHERE id = ?");  
     $stmt->execute([$livro_id]);  
     $livro_atual = $stmt->fetch(PDO::FETCH_ASSOC);  
-    
+
     if ($livro_atual) {  
         $stmt = $pdo->prepare("SELECT * FROM anexos_livros WHERE livro_id = ? ORDER BY data_upload DESC");  
         $stmt->execute([$livro_id]);  
@@ -82,12 +100,12 @@ if (!empty($livro_atual) && is_array($livro_atual)) {
     $livro_tipo = $livro_atual['tipo'];  
     $livro_numero = $livro_atual['numero'];  
 
-    // Livro anterior considerando número como inteiro
+    // Livro anterior considerando número como inteiro  
     $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND CAST(numero AS UNSIGNED) < CAST(? AS UNSIGNED) ORDER BY CAST(numero AS UNSIGNED) DESC LIMIT 1");  
     $stmt->execute([$livro_tipo, $livro_numero]);  
     $livro_anterior = $stmt->fetch(PDO::FETCH_ASSOC);  
 
-    // Livro próximo considerando número como inteiro
+    // Livro próximo considerando número como inteiro  
     $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND CAST(numero AS UNSIGNED) > CAST(? AS UNSIGNED) ORDER BY CAST(numero AS UNSIGNED) ASC LIMIT 1");  
     $stmt->execute([$livro_tipo, $livro_numero]);  
     $livro_proximo = $stmt->fetch(PDO::FETCH_ASSOC);  
@@ -95,6 +113,7 @@ if (!empty($livro_atual) && is_array($livro_atual)) {
 
 include 'includes/header.php';  
 ?>
+
 
 <div class="container-fluid py-4">  
     <div class="d-flex justify-content-between align-items-center mb-4">  
@@ -598,6 +617,35 @@ include 'includes/header.php';
 
     <?php else: ?>  
         <!-- Lista de livros -->  
+        <form method="get" class="row g-3 align-items-end mb-4">
+            <div class="col-md-3">
+                <label for="filtro_tipo" class="form-label">Tipo do Livro</label>
+                <select name="tipo" id="filtro_tipo" class="form-select">
+                    <option value="todos">Todos</option>
+                    <option value="nascimento" <?= $filtro_tipo === 'nascimento' ? 'selected' : '' ?>>Nascimento</option>
+                    <option value="casamento" <?= $filtro_tipo === 'casamento' ? 'selected' : '' ?>>Casamento</option>
+                    <option value="óbito" <?= $filtro_tipo === 'óbito' ? 'selected' : '' ?>>Óbito</option>
+                    <!-- adicione mais tipos se necessário -->
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="numero_livro" class="form-label">Número do Livro</label>
+                <input type="text" name="numero_livro" id="numero_livro" class="form-control" value="<?= htmlspecialchars($_GET['numero_livro'] ?? '') ?>">
+            </div>
+
+            <div class="col-md-3">
+                <label for="termo" class="form-label">Número do Termo</label>
+                <input type="number" name="termo" id="termo" class="form-control" value="<?= htmlspecialchars($_GET['termo'] ?? '') ?>">
+            </div>
+
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i data-feather="search" class="me-1"></i> Filtrar
+                </button>
+            </div>
+        </form>
+
         <div class="row mb-4">  
             <div class="col-md-12">  
                 <div class="card border-0 shadow-sm">  
