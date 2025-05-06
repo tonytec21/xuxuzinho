@@ -79,6 +79,25 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     }  
 }  
 
+$livro_anterior = null;
+$livro_proximo = null;
+
+if (!empty($livro_atual) && is_array($livro_atual)) {
+    $livro_id_atual = $livro_atual['id'];
+    $livro_tipo = $livro_atual['tipo'];
+    $livro_numero = $livro_atual['numero'];
+
+    // Livro anterior
+    $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND numero < ? ORDER BY numero DESC LIMIT 1");
+    $stmt->execute([$livro_tipo, $livro_numero]);
+    $livro_anterior = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // Livro próximo
+    $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND numero > ? ORDER BY numero ASC LIMIT 1");
+    $stmt->execute([$livro_tipo, $livro_numero]);
+    $livro_proximo = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
 include 'includes/header.php';  
 ?>  
 
@@ -124,14 +143,38 @@ include 'includes/header.php';
         <div class="row mb-4">  
             <div class="col-md-12">  
                 <div class="card border-0 shadow-sm rounded-3 overflow-hidden">  
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">  
-                        <h5 class="mb-0 text-primary">  
-                            <i data-feather="book" class="me-2 text-primary" style="width: 20px; height: 20px;"></i>  
-                            Detalhes do Livro  
-                        </h5>  
-                        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">  
-                            ID: <?php echo htmlspecialchars($livro_atual['id']); ?>  
-                        </span>  
+                    <div class="card-header bg-white py-3">  
+                        <div class="row align-items-center">  
+                            <!-- Título e ID -->  
+                            <div class="col-md-6 mb-2 mb-md-0">  
+                                <div class="d-flex align-items-center flex-wrap">  
+                                    <h5 class="mb-0 text-primary d-flex align-items-center me-3">  
+                                        <i data-feather="book" class="me-2 text-primary" style="width: 20px; height: 20px;"></i>  
+                                        Detalhes do Livro  
+                                    </h5>  
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 mt-2 mt-sm-0">  
+                                        ID: <?php echo htmlspecialchars($livro_atual['id']); ?>  
+                                    </span>  
+                                </div>  
+                            </div>  
+                            
+                            <!-- Botões de navegação -->  
+                            <div class="col-md-6">  
+                                <div class="d-flex justify-content-md-end justify-content-start flex-wrap gap-2 mt-2 mt-md-0">  
+                                    <?php if ($livro_anterior): ?>  
+                                        <a href="?id=<?php echo $livro_anterior['id']; ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm">  
+                                            <i data-feather="chevron-left" class="me-1" style="width: 14px; height: 14px;"></i> Livro Anterior  
+                                        </a>  
+                                    <?php endif; ?>  
+
+                                    <?php if ($livro_proximo): ?>  
+                                        <a href="?id=<?php echo $livro_proximo['id']; ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm">  
+                                            Próximo Livro <i data-feather="chevron-right" class="ms-1" style="width: 14px; height: 14px;"></i>  
+                                        </a>  
+                                    <?php endif; ?>  
+                                </div>  
+                            </div>  
+                        </div>  
                     </div>  
                     <div class="card-body p-4">  
                         <div class="row g-4">  
