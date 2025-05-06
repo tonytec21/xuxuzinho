@@ -114,7 +114,6 @@ if (!empty($livro_atual) && is_array($livro_atual)) {
 include 'includes/header.php';  
 ?>
 
-
 <div class="container-fluid py-4">  
     <div class="d-flex justify-content-between align-items-center mb-4">  
         <h1 class="h3 mb-0 text-gray-800">  
@@ -617,56 +616,76 @@ include 'includes/header.php';
 
     <?php else: ?>  
         <!-- Lista de livros -->  
-        <form method="get" class="row g-3 align-items-end mb-4">
-            <div class="col-md-3">
-                <label for="filtro_tipo" class="form-label">Tipo do Livro</label>
-                <select name="tipo" id="filtro_tipo" class="form-select">
-                    <option value="todos">Todos</option>
-                    <option value="nascimento" <?= $filtro_tipo === 'nascimento' ? 'selected' : '' ?>>Nascimento</option>
-                    <option value="casamento" <?= $filtro_tipo === 'casamento' ? 'selected' : '' ?>>Casamento</option>
-                    <option value="óbito" <?= $filtro_tipo === 'óbito' ? 'selected' : '' ?>>Óbito</option>
-                    <!-- adicione mais tipos se necessário -->
-                </select>
-            </div>
+        <form method="get" class="card shadow-sm mb-4">  
+            <div class="card-body">  
+                <div class="row g-3">  
+                    <!-- Cabeçalho do formulário -->  
+                    <div class="col-12">  
+                        <h5 class="mb-0 d-flex align-items-center text-primary">  
+                            <i data-feather="filter" class="me-2" style="width: 18px; height: 18px;"></i>  
+                            Filtrar Livros  
+                        </h5>  
+                        <hr class="my-2">  
+                    </div>  
+                    
+                    <!-- Campos de filtro -->  
+                    <div class="col-md-4 col-sm-6">  
+                        <label for="filtro_tipo" class="form-label">Tipo do Livro</label>  
+                        <div class="input-group">  
+                            <span class="input-group-text bg-light">  
+                                <i data-feather="book" style="width: 16px; height: 16px;"></i>  
+                            </span>  
+                            <select name="tipo" id="filtro_tipo" class="form-select">  
+                                <option value="todos">Todos os tipos</option>  
+                                <option value="nascimento" <?= $filtro_tipo === 'nascimento' ? 'selected' : '' ?>>Nascimento</option>  
+                                <option value="casamento" <?= $filtro_tipo === 'casamento' ? 'selected' : '' ?>>Casamento</option>  
+                                <option value="óbito" <?= $filtro_tipo === 'óbito' ? 'selected' : '' ?>>Óbito</option>  
+                                <!-- adicione mais tipos se necessário -->  
+                            </select>  
+                        </div>  
+                    </div>  
 
-            <div class="col-md-3">
-                <label for="numero_livro" class="form-label">Número do Livro</label>
-                <input type="text" name="numero_livro" id="numero_livro" class="form-control" value="<?= htmlspecialchars($_GET['numero_livro'] ?? '') ?>">
-            </div>
+                    <div class="col-md-4 col-sm-6">  
+                        <label for="numero_livro" class="form-label">Número do Livro</label>  
+                        <div class="input-group">  
+                            <span class="input-group-text bg-light">  
+                                <i data-feather="hash" style="width: 16px; height: 16px;"></i>  
+                            </span>  
+                            <input type="text" name="numero_livro" id="numero_livro" class="form-control"   
+                                placeholder="Ex: 35" value="<?= htmlspecialchars($_GET['numero_livro'] ?? '') ?>">  
+                        </div>  
+                    </div>  
 
-            <div class="col-md-3">
-                <label for="termo" class="form-label">Número do Termo</label>
-                <input type="number" name="termo" id="termo" class="form-control" value="<?= htmlspecialchars($_GET['termo'] ?? '') ?>">
-            </div>
+                    <div class="col-md-4 col-sm-6">  
+                        <label for="termo" class="form-label">Número do Termo</label>  
+                        <div class="input-group">  
+                            <span class="input-group-text bg-light">  
+                                <i data-feather="file-text" style="width: 16px; height: 16px;"></i>  
+                            </span>  
+                            <input type="number" name="termo" id="termo" class="form-control"   
+                                placeholder="Ex: 12345" value="<?= htmlspecialchars($_GET['termo'] ?? '') ?>">  
+                        </div>  
+                    </div>  
 
-            <div class="col-md-3">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i data-feather="search" class="me-1"></i> Filtrar
-                </button>
-            </div>
+                    <!-- Botões de ação -->  
+                    <div class="col-12 mt-4 d-flex gap-2 justify-content-end">  
+                        <?php if (!empty($_GET['tipo']) || !empty($_GET['numero_livro']) || !empty($_GET['termo'])): ?>  
+                        <a href="?" class="btn btn-outline-secondary">  
+                            <i data-feather="x" class="me-1" style="width: 16px; height: 16px;"></i> Limpar Filtros  
+                        </a>  
+                        <?php endif; ?>  
+                        
+                        <button type="submit" class="btn btn-primary">  
+                            <i data-feather="search" class="me-1" style="width: 16px; height: 16px;"></i> Aplicar Filtros  
+                        </button>  
+                    </div>  
+                </div>  
+            </div>  
         </form>
 
         <div class="row mb-4">  
             <div class="col-md-12">  
                 <div class="card border-0 shadow-sm">  
-                    <div class="card-header bg-white">  
-                        <div class="row align-items-center">  
-                            <div class="col-md-8">  
-                                <h5 class="mb-0">Lista de Livros</h5>  
-                            </div>  
-                            <div class="col-md-4">  
-                                <form method="get" action="livros.php" class="d-flex">  
-                                    <select name="tipo" class="form-select me-2" onchange="this.form.submit()">  
-                                        <option value="todos" <?php echo $filtro_tipo == 'todos' ? 'selected' : ''; ?>>Todos os tipos</option>  
-                                        <option value="nascimento" <?php echo $filtro_tipo == 'nascimento' ? 'selected' : ''; ?>>Nascimento</option>  
-                                        <option value="casamento" <?php echo $filtro_tipo == 'casamento' ? 'selected' : ''; ?>>Casamento</option>  
-                                        <option value="obito" <?php echo $filtro_tipo == 'obito' ? 'selected' : ''; ?>>Óbito</option>  
-                                        <option value="outros" <?php echo $filtro_tipo == 'outros' ? 'selected' : ''; ?>>Outros</option>  
-                                    </select>  
-                                </form>  
-                            </div>  
-                        </div>  
-                    </div>  
                     <div class="card-body">  
                         <?php if (empty($livros)): ?>  
                             <div class="text-center py-5">  
