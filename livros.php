@@ -19,12 +19,10 @@ if (isset($_POST['cadastrar_livro'])) {
     $notas = $_POST['notas'] ?? '';  
     
     try {  
-        $stmt = $pdo->prepare("INSERT INTO livros (tipo, numero, qtd_folhas, contagem_frente_verso,   
-                               termo_inicial, termos_por_pagina, notas, usuario_id)   
+        $stmt = $pdo->prepare("INSERT INTO livros (tipo, numero, qtd_folhas, contagem_frente_verso, termo_inicial, termos_por_pagina, notas, usuario_id)   
                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)");  
         
-        $stmt->execute([$tipo, $numero, $qtd_folhas, $contagem_frente_verso,   
-                      $termo_inicial, $termos_por_pagina, $notas, $_SESSION['user_id']]);  
+        $stmt->execute([$tipo, $numero, $qtd_folhas, $contagem_frente_verso, $termo_inicial, $termos_por_pagina, $notas, $_SESSION['user_id']]);  
         
         $_SESSION['mensagem'] = "Livro cadastrado com sucesso!";  
         $_SESSION['tipo_mensagem'] = "success";  
@@ -43,7 +41,6 @@ $sql = "SELECT l.*,
         (SELECT COUNT(*) FROM paginas_livro p JOIN anexos_livros a ON p.anexo_id = a.id WHERE a.livro_id = l.id) as total_paginas  
         FROM livros l";  
 
-// Aplicar filtros  
 if ($filtro_tipo !== 'todos') {  
     $sql .= " WHERE l.tipo = :tipo";  
 }  
@@ -66,40 +63,38 @@ $anexos = [];
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {  
     $livro_id = $_GET['id'];  
     
-    // Buscar dados do livro  
     $stmt = $pdo->prepare("SELECT * FROM livros WHERE id = ?");  
     $stmt->execute([$livro_id]);  
     $livro_atual = $stmt->fetch(PDO::FETCH_ASSOC);  
     
     if ($livro_atual) {  
-        // Buscar anexos do livro  
         $stmt = $pdo->prepare("SELECT * FROM anexos_livros WHERE livro_id = ? ORDER BY data_upload DESC");  
         $stmt->execute([$livro_id]);  
         $anexos = $stmt->fetchAll(PDO::FETCH_ASSOC);  
     }  
 }  
 
-$livro_anterior = null;
-$livro_proximo = null;
+$livro_anterior = null;  
+$livro_proximo = null;  
 
-if (!empty($livro_atual) && is_array($livro_atual)) {
-    $livro_id_atual = $livro_atual['id'];
-    $livro_tipo = $livro_atual['tipo'];
-    $livro_numero = $livro_atual['numero'];
+if (!empty($livro_atual) && is_array($livro_atual)) {  
+    $livro_id_atual = $livro_atual['id'];  
+    $livro_tipo = $livro_atual['tipo'];  
+    $livro_numero = $livro_atual['numero'];  
 
-    // Livro anterior
-    $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND numero < ? ORDER BY numero DESC LIMIT 1");
-    $stmt->execute([$livro_tipo, $livro_numero]);
-    $livro_anterior = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Livro anterior considerando número como inteiro
+    $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND CAST(numero AS UNSIGNED) < CAST(? AS UNSIGNED) ORDER BY CAST(numero AS UNSIGNED) DESC LIMIT 1");  
+    $stmt->execute([$livro_tipo, $livro_numero]);  
+    $livro_anterior = $stmt->fetch(PDO::FETCH_ASSOC);  
 
-    // Livro próximo
-    $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND numero > ? ORDER BY numero ASC LIMIT 1");
-    $stmt->execute([$livro_tipo, $livro_numero]);
-    $livro_proximo = $stmt->fetch(PDO::FETCH_ASSOC);
-}
+    // Livro próximo considerando número como inteiro
+    $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND CAST(numero AS UNSIGNED) > CAST(? AS UNSIGNED) ORDER BY CAST(numero AS UNSIGNED) ASC LIMIT 1");  
+    $stmt->execute([$livro_tipo, $livro_numero]);  
+    $livro_proximo = $stmt->fetch(PDO::FETCH_ASSOC);  
+}  
 
 include 'includes/header.php';  
-?>  
+?>
 
 <div class="container-fluid py-4">  
     <div class="d-flex justify-content-between align-items-center mb-4">  
