@@ -67,12 +67,16 @@ if (!empty($where)) {
 
 $sql .= " ORDER BY l.data_cadastro DESC";  
 
-$stmt = $pdo->prepare($sql);  
-foreach ($params as $key => $val) {  
-    $stmt->bindValue($key, $val);  
+$livros = [];
+
+if (!empty($_GET['tipo']) || !empty($_GET['numero_livro']) || !empty($_GET['termo'])) {
+    $stmt = $pdo->prepare($sql);  
+    foreach ($params as $key => $val) {  
+        $stmt->bindValue($key, $val);  
+    }  
+    $stmt->execute();  
+    $livros = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }  
-$stmt->execute();  
-$livros = $stmt->fetchAll(PDO::FETCH_ASSOC);  
 
 // Verificar se estamos visualizando um livro específico  
 $livro_atual = null;  
@@ -687,15 +691,13 @@ include 'includes/header.php';
             <div class="col-md-12">  
                 <div class="card border-0 shadow-sm">  
                     <div class="card-body">  
-                        <?php if (empty($livros)): ?>  
-                            <div class="text-center py-5">  
-                                <i data-feather="book" style="width: 48px; height: 48px; color: #ccc;"></i>  
-                                <p class="mt-3 text-muted">Nenhum livro cadastrado</p>  
-                                <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#novoLivroModal">  
-                                    Cadastrar Primeiro Livro  
-                                </button>  
-                            </div>  
-                        <?php else: ?>  
+                        <?php if (!empty($_GET['tipo']) || !empty($_GET['numero_livro']) || !empty($_GET['termo'])): ?>
+                            <?php if (empty($livros)): ?>  
+                                <div class="text-center py-5">  
+                                    <i data-feather="book" style="width: 48px; height: 48px; color: #ccc;"></i>  
+                                    <p class="mt-3 text-muted">Nenhum livro encontrado com os filtros aplicados</p>  
+                                </div>  
+                            <?php else: ?>   
                             <div class="table-responsive">  
                                 <table  id="tabelaLivros" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">  
                                     <thead>  
@@ -756,11 +758,6 @@ include 'includes/header.php';
                                                     <a href="livros.php?id=<?php echo $livro['id']; ?>" class="btn btn-sm btn-outline-primary">  
                                                             <i data-feather="eye" style="width: 16px; height: 16px;"></i>  
                                                         </a>  
-                                                        <!-- <button type="button" class="btn btn-sm btn-outline-danger excluir-livro"   
-                                                                data-id="<?php echo $livro['id']; ?>"   
-                                                                data-numero="<?php echo htmlspecialchars($livro['tipo'] . ' - ' . $livro['numero']); ?>">  
-                                                            <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>  
-                                                        </button>   -->
                                                     </div>  
                                                 </td>  
                                             </tr>  
@@ -768,7 +765,13 @@ include 'includes/header.php';
                                     </tbody>  
                                 </table>  
                             </div>  
-                        <?php endif; ?>  
+                        <?php endif; ?> 
+                        <?php else: ?>
+                            <div class="text-center py-5">
+                                <i data-feather="search" style="width: 48px; height: 48px; color: #ccc;"></i>  
+                                <p class="mt-3 text-muted">Use os filtros acima para buscar livros cadastrados</p>  
+                            </div>
+                        <?php endif; ?> 
                     </div>  
                 </div>  
             </div>  
