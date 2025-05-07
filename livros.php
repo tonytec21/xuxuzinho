@@ -17,14 +17,17 @@ if (isset($_POST['cadastrar_livro'])) {
     $qtd_folhas = $_POST['qtd_folhas'];  
     $contagem_frente_verso = isset($_POST['contagem_frente_verso']) ? 1 : 0;  
     $termo_inicial = $_POST['termo_inicial'];  
-    $termos_por_pagina = $_POST['termos_por_pagina'];  
+    $modo_termo = $_POST['modo_termo'];
+    $termos_por_pagina = ($modo_termo === 'termos_por_pagina') ? intval($_POST['termos_por_pagina']) : null;
+    $paginas_por_termo = ($modo_termo === 'paginas_por_termo') ? intval($_POST['paginas_por_termo']) : null;
     $notas = $_POST['notas'] ?? '';  
 
     try {  
-        $stmt = $pdo->prepare("INSERT INTO livros (tipo, numero, qtd_folhas, contagem_frente_verso, termo_inicial, termos_por_pagina, notas, usuario_id)   
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?)");  
+        $stmt = $pdo->prepare("INSERT INTO livros 
+            (tipo, numero, qtd_folhas, contagem_frente_verso, termo_inicial, termos_por_pagina, paginas_por_termo, notas, usuario_id) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");  
 
-        $stmt->execute([$tipo, $numero, $qtd_folhas, $contagem_frente_verso, $termo_inicial, $termos_por_pagina, $notas, $_SESSION['user_id']]);  
+        $stmt->execute([$tipo, $numero, $qtd_folhas, $contagem_frente_verso, $termo_inicial, $termos_por_pagina, $paginas_por_termo, $notas, $_SESSION['user_id']]);  
 
         $_SESSION['mensagem'] = "Livro cadastrado com sucesso!";  
         $_SESSION['tipo_mensagem'] = "success";  
@@ -57,7 +60,12 @@ if (!empty($filtro_numero)) {
 }  
 
 if (!empty($filtro_termo) && is_numeric($filtro_termo)) {  
-    $where[] = 'CAST(:termo AS UNSIGNED) BETWEEN l.termo_inicial AND (l.termo_inicial + (l.qtd_folhas * l.termos_por_pagina) - 1)';  
+    $where[] = '(CAST(:termo AS UNSIGNED) BETWEEN l.termo_inicial AND (
+                    CASE 
+                        WHEN l.termos_por_pagina IS NOT NULL THEN l.termo_inicial + (l.qtd_folhas * l.termos_por_pagina) - 1
+                        WHEN l.paginas_por_termo IS NOT NULL THEN l.termo_inicial + FLOOR(l.qtd_folhas / l.paginas_por_termo) - 1
+                        ELSE l.termo_inicial
+                    END))';  
     $params[':termo'] = $filtro_termo;  
 }  
 
@@ -104,18 +112,17 @@ if (!empty($livro_atual) && is_array($livro_atual)) {
     $livro_tipo = $livro_atual['tipo'];  
     $livro_numero = $livro_atual['numero'];  
 
-    // Livro anterior considerando número como inteiro  
     $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND CAST(numero AS UNSIGNED) < CAST(? AS UNSIGNED) ORDER BY CAST(numero AS UNSIGNED) DESC LIMIT 1");  
     $stmt->execute([$livro_tipo, $livro_numero]);  
     $livro_anterior = $stmt->fetch(PDO::FETCH_ASSOC);  
 
-    // Livro próximo considerando número como inteiro  
     $stmt = $pdo->prepare("SELECT id FROM livros WHERE tipo = ? AND CAST(numero AS UNSIGNED) > CAST(? AS UNSIGNED) ORDER BY CAST(numero AS UNSIGNED) ASC LIMIT 1");  
     $stmt->execute([$livro_tipo, $livro_numero]);  
     $livro_proximo = $stmt->fetch(PDO::FETCH_ASSOC);  
 }  
 
-include 'includes/header.php';  
+include 'includes/header.php';
+  
 ?>
 
 <div class="container-fluid py-4">  
@@ -736,9 +743,20 @@ include 'includes/header.php';
                                                     if ($livro['contagem_frente_verso']) {  
                                                         $paginas_totais *= 2;  
                                                     }  
-                                                    $termos_totais = $paginas_totais * $livro['termos_por_pagina'];  
-                                                    $termo_final = $livro['termo_inicial'] + $termos_totais - 1;  
-                                                    
+                                                    $paginas_totais = $livro['qtd_folhas'];
+                                                    if ($livro['contagem_frente_verso']) {
+                                                        $paginas_totais *= 2;
+                                                    }
+
+                                                    if (!is_null($livro['termos_por_pagina'])) {
+                                                        $termos_totais = $paginas_totais * $livro['termos_por_pagina'];
+                                                    } elseif (!is_null($livro['paginas_por_termo']) && $livro['paginas_por_termo'] > 0) {
+                                                        $termos_totais = floor($paginas_totais / $livro['paginas_por_termo']);
+                                                    } else {
+                                                        $termos_totais = 0;
+                                                    }
+
+                                                    $termo_final = $livro['termo_inicial'] + $termos_totais - 1;
                                                     echo $livro['termo_inicial'] . ' - ' . $termo_final;  
                                                     ?>  
                                                 </td> 
@@ -819,10 +837,26 @@ include 'includes/header.php';
                             <label for="termo_inicial" class="form-label">Termo Inicial</label>  
                             <input type="number" class="form-control" id="termo_inicial" name="termo_inicial" min="1" required>  
                         </div>  
-                        <div class="col-md-6 mb-3">  
-                            <label for="termos_por_pagina" class="form-label">Termos por Página</label>  
-                            <input type="number" class="form-control" id="termos_por_pagina" name="termos_por_pagina" min="1" value="1" required>  
-                        </div>  
+                        <div class="row mb-3 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label">Modo de contagem dos termos</label>
+                                <select class="form-select" id="modo_termo" name="modo_termo" required>
+                                    <option value="termos_por_pagina" selected>Termos por página</option>
+                                    <option value="paginas_por_termo">Páginas por termo</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6" id="campo_termos_por_pagina">
+                                <label for="termos_por_pagina" class="form-label">Qtd. de termos por página</label>
+                                <input type="number" class="form-control" id="termos_por_pagina" name="termos_por_pagina" min="1" value="1">
+                            </div>
+
+                            <div class="col-md-6 d-none" id="campo_paginas_por_termo">
+                                <label for="paginas_por_termo" class="form-label">Qtd. de páginas por termo</label>
+                                <input type="number" class="form-control" id="paginas_por_termo" name="paginas_por_termo" min="1" value="2">
+                            </div>
+                        </div>
+
                         <div class="col-md-12 mb-3">  
                             <label for="notas" class="form-label">Notas (opcional)</label>  
                             <textarea class="form-control" id="notas" name="notas" rows="3"></textarea>  
@@ -1833,6 +1867,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }  
     }, 500);  
 });
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const selectModo = document.getElementById('modo_termo');
+    const campoTermosPorPagina = document.getElementById('campo_termos_por_pagina');
+    const campoPaginasPorTermo = document.getElementById('campo_paginas_por_termo');
+
+    selectModo.addEventListener('change', function () {
+        if (this.value === 'termos_por_pagina') {
+            campoTermosPorPagina.classList.remove('d-none');
+            campoPaginasPorTermo.classList.add('d-none');
+        } else {
+            campoPaginasPorTermo.classList.remove('d-none');
+            campoTermosPorPagina.classList.add('d-none');
+        }
+    });
+});
+
 </script>
 
 <?php include 'includes/footer.php'; ?>   
