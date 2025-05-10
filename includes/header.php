@@ -162,6 +162,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
                                 <span>&nbsp;Livros</span>  
                             </a>  
                         </li> 
+
+                        <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'triagem.php' && !isset($_GET['id'])) ? 'xz-active' : ''; ?>">  
+                            <a href="triagem.php" class="xz-sidebar-link">  
+                                <i data-feather="clipboard"></i>  
+                                <span>&nbsp;Registre-se</span>  
+                            </a>  
+                        </li>
                         
                         <?php if (is_admin()): ?>  
                         <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'aprovacao_usuarios.php') ? 'xz-active' : ''; ?>">  
