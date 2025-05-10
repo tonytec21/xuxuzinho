@@ -207,17 +207,25 @@ function processarPDF($pdfPath, $livro_id, $anexo_id, $pdo, $dirPaginas)
         $numFolha = $ehVerso ? ($proxFolha - 1) : $proxFolha;
 
         /* --- termo --- */
-        if ($livro['modo_termo'] === 'termos_por_pagina') {
+        $temTermosPorPagina = is_numeric($livro['termos_por_pagina']);
+        $temPaginasPorTermo = is_numeric($livro['paginas_por_termo']);
+
+        if ($temTermosPorPagina && !$temPaginasPorTermo) {
+            // Lógica: termos por página
             $termosPorPagina = intval($livro['termos_por_pagina']);
-            $paginaAbsoluta = $totalPaginasAntes; // já é 0-based, mesmo que frente/verso esteja ativado
+            $paginaAbsoluta = $totalPaginasAntes; // 0-based
             $termoInicial = $livro['termo_inicial'] + ($paginaAbsoluta * $termosPorPagina);
             $termoFinal   = $termoInicial + $termosPorPagina - 1;
-        } else {                                                 // paginas_por_termo
+        } elseif (!$temTermosPorPagina && $temPaginasPorTermo) {
+            // Lógica: páginas por termo
             $pagsPorTermo = max(1, intval($livro['paginas_por_termo']));
-            $termoInicial = $livro['termo_inicial']
-                        + floor($totalPaginasAntes / $pagsPorTermo);
+            $termoInicial = $livro['termo_inicial'] + floor($totalPaginasAntes / $pagsPorTermo);
             $termoFinal   = $termoInicial;
+        } else {
+            // Caso inválido: nem uma nem outra
+            $termoInicial = $termoFinal = $livro['termo_inicial'];
         }
+
 
         /* ----- insert ----- */
         $stmt = $pdo->prepare("
@@ -270,17 +278,25 @@ function processarImagem($imgPath, $livro_id, $anexo_id, $pdo, $dirPaginas)
     $numFolha = $ehVerso ? $proxFolhaBase - 1 : $proxFolhaBase;
 
     /* --- termo --- */
-    if ($livro['modo_termo'] === 'termos_por_pagina') {
+    $temTermosPorPagina = is_numeric($livro['termos_por_pagina']);
+    $temPaginasPorTermo = is_numeric($livro['paginas_por_termo']);
+
+    if ($temTermosPorPagina && !$temPaginasPorTermo) {
+        // Lógica: termos por página
         $termosPorPagina = intval($livro['termos_por_pagina']);
-        $paginaAbsoluta = $totalPaginasAntes; // já é 0-based, mesmo que frente/verso esteja ativado
+        $paginaAbsoluta = $totalPaginasAntes; // 0-based
         $termoInicial = $livro['termo_inicial'] + ($paginaAbsoluta * $termosPorPagina);
         $termoFinal   = $termoInicial + $termosPorPagina - 1;
-    } else {                                                 // paginas_por_termo
+    } elseif (!$temTermosPorPagina && $temPaginasPorTermo) {
+        // Lógica: páginas por termo
         $pagsPorTermo = max(1, intval($livro['paginas_por_termo']));
-        $termoInicial = $livro['termo_inicial']
-                    + floor($totalPaginasAntes / $pagsPorTermo);
+        $termoInicial = $livro['termo_inicial'] + floor($totalPaginasAntes / $pagsPorTermo);
         $termoFinal   = $termoInicial;
+    } else {
+        // Caso inválido: nem uma nem outra
+        $termoInicial = $termoFinal = $livro['termo_inicial'];
     }
+
 
     /* --- copia imagem --- */
     $nomeArq = 'pagina_' . sprintf('%04d', $proxPag) . '.jpg';
