@@ -206,15 +206,17 @@ function processarPDF($pdfPath, $livro_id, $anexo_id, $pdo, $dirPaginas)
         $ehVerso = ($livro['contagem_frente_verso'] && ($paginaAbsoluta % 2 == 1));
         $numFolha = $ehVerso ? ($proxFolha - 1) : $proxFolha;
 
+        /* --- termo --- */
         if ($livro['modo_termo'] === 'termos_por_pagina') {
-            $termoInicial = $livro['termo_inicial']
-                          + $paginaAbsoluta * $livro['termos_por_pagina'];
-            $termoFinal   = $termoInicial + $livro['termos_por_pagina'] - 1;
-        } else {                                              // paginas_por_termo
+            $termosPorPagina = intval($livro['termos_por_pagina']);
+            $paginaAbsoluta = $totalPaginasAntes; // já é 0-based, mesmo que frente/verso esteja ativado
+            $termoInicial = $livro['termo_inicial'] + ($paginaAbsoluta * $termosPorPagina);
+            $termoFinal   = $termoInicial + $termosPorPagina - 1;
+        } else {                                                 // paginas_por_termo
             $pagsPorTermo = max(1, intval($livro['paginas_por_termo']));
             $termoInicial = $livro['termo_inicial']
-                          + floor($paginaAbsoluta / $pagsPorTermo);
-            $termoFinal   = $termoInicial;                    // mesmo valor
+                        + floor($totalPaginasAntes / $pagsPorTermo);
+            $termoFinal   = $termoInicial;
         }
 
         /* ----- insert ----- */
@@ -269,13 +271,14 @@ function processarImagem($imgPath, $livro_id, $anexo_id, $pdo, $dirPaginas)
 
     /* --- termo --- */
     if ($livro['modo_termo'] === 'termos_por_pagina') {
-        $termoInicial = $livro['termo_inicial']
-                      + $totalPaginasAntes * $livro['termos_por_pagina'];
-        $termoFinal   = $termoInicial + $livro['termos_por_pagina'] - 1;
+        $termosPorPagina = intval($livro['termos_por_pagina']);
+        $paginaAbsoluta = $totalPaginasAntes; // já é 0-based, mesmo que frente/verso esteja ativado
+        $termoInicial = $livro['termo_inicial'] + ($paginaAbsoluta * $termosPorPagina);
+        $termoFinal   = $termoInicial + $termosPorPagina - 1;
     } else {                                                 // paginas_por_termo
         $pagsPorTermo = max(1, intval($livro['paginas_por_termo']));
         $termoInicial = $livro['termo_inicial']
-                      + floor($totalPaginasAntes / $pagsPorTermo);
+                    + floor($totalPaginasAntes / $pagsPorTermo);
         $termoFinal   = $termoInicial;
     }
 
