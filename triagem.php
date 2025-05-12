@@ -811,7 +811,17 @@ document.addEventListener('DOMContentLoaded',()=>{
                                     <div><?= htmlspecialchars($r['nome_requerente']) ?></div>  
                                 </div>  
                             </td>  
-                            <td><span class="badge bg-light text-dark"><?= ucfirst($r['tipo_certidao']) ?></span></td>  
+                            <td>  
+                            <?php  
+                            $tipoClass = strtolower($r['tipo_certidao']) === 'nascimento'   
+                            ? 'badge-nascimento'   
+                            : (strtolower($r['tipo_certidao']) === 'casamento'   
+                                ? 'badge-casamento'   
+                                : 'bg-light text-dark');  
+
+                            echo "<span class='badge $tipoClass'>" . ucfirst($r['tipo_certidao']) . "</span>";  
+                            ?>  
+                            </td>  
                             <td><?= htmlspecialchars($r['nome_registrado']) ?></td>  
                             <td>  
 <?php  

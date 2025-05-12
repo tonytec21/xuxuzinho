@@ -121,6 +121,20 @@ body {
     height: 13px !important;  
 }  
 
+/* Para Nascimento - tom azul-pastel suave (representa novo começo) */  
+.badge-nascimento {  
+    background-color: #B6E3E9; /* Azul suave */  
+    color: #2C7D8C;  
+    border: 1px solid #A5D1D7;  
+}  
+
+/* Para Casamento - tom rosa-romântico (representa união) */  
+.badge-casamento {  
+    background-color: #F8D0E3; /* Rosa suave */  
+    color: #AF4D7E;  
+    border: 1px solid #EBBFD2;  
+}
+
 /* Upload area */  
 .upload-area {  
     border: 2px dashed #d1d3e2;  
