@@ -184,6 +184,7 @@ body {
 
 [data-bs-theme="dark"] .table th {   
     background-color: #2b3035!important;  
+    color: #f8f9fa!important;
 }  
 
 .table td {  
