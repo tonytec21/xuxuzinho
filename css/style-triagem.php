@@ -109,7 +109,7 @@ body {
 .badge {  
     font-weight: 600;  
     padding: 0.5rem 0.75rem;  
-    border-radius: 30px;  
+    border-radius: 0.40rem;  
     display: inline-flex;  
     align-items: center;  
     font-size: 0.75rem;  
