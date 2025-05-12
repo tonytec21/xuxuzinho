@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded',()=>{
                 <?php if (!empty($registro_atual['data_cadastro'])): ?>
                     <div class="col-md-4">
                         <label class="form-label text-muted">Data de Cadastro</label>
-                        <div class="form-control bg-light"><?= date('d/m/Y H:i', strtotime($registro_atual['data_cadastro'])) ?></div>
+                        <div class="form-control bg-light"><?= date('d/m/Y', strtotime($registro_atual['data_cadastro'])) ?></div>
                     </div>
                 <?php endif; ?>
 
@@ -585,6 +585,15 @@ document.addEventListener('DOMContentLoaded',()=>{
                                     </div>  
                                     <div class="fs-5 fw-bold text-danger">Solicitação Rejeitada</div>  
                                 </div>  
+
+                                <div class="d-grid mt-3">
+                                    <button class="btn btn-warning btn-lg btn-reavaliar d-flex align-items-center justify-content-center" data-id="<?= $registro_atual['id'] ?>">
+                                        <div class="rounded-circle bg-white p-1 me-2">
+                                            <i data-feather="refresh-cw" class="text-warning" style="width: 20px; height: 20px;"></i>
+                                        </div>
+                                        <span>Reavaliar Solicitação</span>
+                                    </button>
+                                </div>
 
                                 <?php if (!empty($registro_atual['motivo_rejeicao'])): ?>  
                                     <div class="mt-4 card border-danger">  
@@ -827,7 +836,7 @@ $statusIcon = match($r['status']){
 echo "<span class='badge $statusClass'><i data-feather='$statusIcon' style='width:14px;height:14px;margin-right:4px'></i>" . ucfirst($r['status']) . "</span>";  
 ?>  
                             </td>  
-                            <td><?= date('d/m/Y H:i',strtotime($r['data_cadastro'])) ?></td>  
+                            <td><?= date('d/m/Y',strtotime($r['data_cadastro'])) ?></td>  
                             <td>  
                                 <div class="d-flex justify-content-center gap-1">  
                                     <a href="triagem.php?id=<?= $r['id'] ?>" class="btn btn-sm btn-primary" title="Gerenciar">  
@@ -845,6 +854,11 @@ echo "<span class='badge $statusClass'><i data-feather='$statusIcon' style='widt
                                         <button class="btn btn-sm btn-danger btn-rejeitar" data-id="<?= $r['id'] ?>" title="Rejeitar">  
                                             <i data-feather="x"></i>  
                                         </button>  
+
+                                    <?php elseif ($r['status'] === 'rejeitado'): ?>
+                                        <button class="btn btn-sm btn-warning btn-reavaliar" data-id="<?= $r['id'] ?>" title="Reavaliar">
+                                            <i data-feather="refresh-cw"></i>
+                                        </button>
 
                                     <?php elseif ($r['status'] === 'aprovado'): ?>  
                                         <button class="btn btn-sm btn-success btn-emitir-certidao" data-id="<?= $r['id'] ?>" title="Certidão Emitida">  
@@ -1491,6 +1505,47 @@ $(document).on('click', '.btn-marcar-entregue', function () {
     });
 });
 
+/* ---------- REAVALIAR SOLICITAÇÃO ---------- */
+$(document).on('click', '.btn-reavaliar', function () {
+    const id = $(this).data('id');
+
+    Swal.fire({
+        title: 'Reavaliar Solicitação',
+        text: 'Deseja reavaliar e aprovar esta solicitação anteriormente rejeitada?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#1cc88a',
+        cancelButtonColor: '#858796',
+        confirmButtonText: 'Sim, aprovar novamente',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (!result.isConfirmed) return;
+
+        $.post('aprovar_triagem.php', { id: id }, function (resp) {
+            if (resp.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Solicitação reavaliada!',
+                    text: 'A solicitação foi aprovada novamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => location.reload());
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: resp.message || 'Não foi possível reavaliar.'
+                });
+            }
+        }, 'json').fail(() => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro de conexão',
+                text: 'Tente novamente mais tarde.'
+            });
+        });
+    });
+});
 
 </script>
 

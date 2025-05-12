@@ -9,30 +9,33 @@ $usuario_id   = $_SESSION['usuario_id'] ?? 0;
 $usuario_nome = $_SESSION['nome']        ?? 'Usuário';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    echo json_encode(['success'=>false,'message'=>'Método inválido.']); exit;
+    echo json_encode(['success' => false, 'message' => 'Método inválido.']);
+    exit;
 }
 
 $registro_id = intval($_POST['id'] ?? 0);
 if (!$registro_id) {
-    echo json_encode(['success'=>false,'message'=>'ID inválido.']); exit;
+    echo json_encode(['success' => false, 'message' => 'ID inválido.']);
+    exit;
 }
 
-/* ---------- valida se existe e está pendente -------------------- */
+/* ---------- valida se existe e está pendente ou rejeitado -------------------- */
 $stmt = $pdo->prepare("SELECT status FROM triagem_registros WHERE id = ?");
 $stmt->execute([$registro_id]);
 $reg = $stmt->fetch();
 
-if (!$reg || $reg['status'] !== 'pendente') {
-    echo json_encode(['success'=>false,'message'=>'Registro não encontrado ou já processado.']); exit;
+if (!$reg || !in_array($reg['status'], ['pendente', 'rejeitado'])) {
+    echo json_encode(['success' => false, 'message' => 'Registro não encontrado ou já processado.']);
+    exit;
 }
 
-/* ---------- aprova ---------------------------------------------- */
+/* ---------- aprova o registro ---------------------------------------------- */
 $ok = $pdo->prepare("
     UPDATE triagem_registros
-       SET status='aprovado',
+       SET status        = 'aprovado',
            data_aprovacao = NOW(),
            aprovado_por   = ?
      WHERE id = ?
 ")->execute([$usuario_nome, $registro_id]);
 
-echo json_encode(['success'=>$ok]);
+echo json_encode(['success' => $ok]);
