@@ -182,6 +182,14 @@ body {
     padding: 0.75rem 1rem;  
 }  
 
+[data-bs-theme="dark"] .table th {  
+    font-weight: 600;  
+    color: var(--gray-dark);  
+    background-color: var(--gray-light);  
+    white-space: nowrap;  
+    padding: 0.75rem 1rem;  
+}  
+
 .table td {  
     padding: 0.75rem 1rem;  
     vertical-align: middle;  
