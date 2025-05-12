@@ -805,20 +805,20 @@ document.addEventListener('DOMContentLoaded',()=>{
                             <td><?= $r['protocolo'] ?></td>  
                             <td>  
                                 <div class="d-flex align-items-center">  
-                                <div class="avatar bg-light text-dark rounded-circle d-flex justify-content-center align-items-center me-2" style="width:32px;height:32px;font-weight:bold">  
-                                    <?php  
-                                    $nome = $r['nome_requerente'] ?? 'U';  
-                                    // Extrair o primeiro caractere usando mb_substr para suporte a UTF-8  
-                                    $primeiraLetra = mb_substr($nome, 0, 1, 'UTF-8');  
-                                    // Remover acentos e normalizar  
-                                    $letraSemAcento = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $primeiraLetra);  
-                                    // Se a normalização resultou em string vazia ou caractere especial, usar letra padrão  
-                                    if (empty($letraSemAcento) || !ctype_alpha($letraSemAcento)) {  
-                                        $letraSemAcento = 'U';  
-                                    }  
-                                    echo strtoupper($letraSemAcento);  
-                                    ?>  
-                                </div> 
+                                    <div class="avatar bg-light text-dark rounded-circle d-flex justify-content-center align-items-center me-2" style="width:32px;height:32px;font-weight:bold">  
+                                        <?php  
+                                        $nome = $r['nome_requerente'] ?? 'U';  
+                                        // Extrair o primeiro caractere usando mb_substr para suporte a UTF-8  
+                                        $primeiraLetra = mb_substr($nome, 0, 1, 'UTF-8');  
+                                        // Remover acentos e normalizar  
+                                        $letraSemAcento = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $primeiraLetra);  
+                                        // Se a normalização resultou em string vazia ou caractere especial, usar letra padrão  
+                                        if (empty($letraSemAcento) || !ctype_alpha($letraSemAcento)) {  
+                                            $letraSemAcento = 'U';  
+                                        }  
+                                        echo strtoupper($letraSemAcento);  
+                                        ?>  
+                                    </div> 
                                     <div><?= htmlspecialchars($r['nome_requerente']) ?></div>  
                                 </div>  
                             </td>  
@@ -834,21 +834,23 @@ document.addEventListener('DOMContentLoaded',()=>{
                             ?>  
                             </td>  
                             <td>
-                            <div class="avatar bg-light text-dark rounded-circle d-flex justify-content-center align-items-center me-2" style="width:32px;height:32px;font-weight:bold">  
-                                <?php  
-                                $nome = $r['nome_registrado'] ?? 'U';  
-                                // Extrair o primeiro caractere usando mb_substr para suporte a UTF-8  
-                                $primeiraLetra = mb_substr($nome, 0, 1, 'UTF-8');  
-                                // Remover acentos e normalizar  
-                                $letraSemAcento = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $primeiraLetra);  
-                                // Se a normalização resultou em string vazia ou caractere especial, usar letra padrão  
-                                if (empty($letraSemAcento) || !ctype_alpha($letraSemAcento)) {  
-                                    $letraSemAcento = 'U';  
-                                }  
-                                echo strtoupper($letraSemAcento);  
-                                ?>  
+                            <div class="d-flex align-items-center">
+                                <div class="avatar bg-light text-dark rounded-circle d-flex justify-content-center align-items-center me-2" style="width:32px;height:32px;font-weight:bold">  
+                                    <?php  
+                                    $nome = $r['nome_registrado'] ?? 'U';  
+                                    // Extrair o primeiro caractere usando mb_substr para suporte a UTF-8  
+                                    $primeiraLetra = mb_substr($nome, 0, 1, 'UTF-8');  
+                                    // Remover acentos e normalizar  
+                                    $letraSemAcento = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $primeiraLetra);  
+                                    // Se a normalização resultou em string vazia ou caractere especial, usar letra padrão  
+                                    if (empty($letraSemAcento) || !ctype_alpha($letraSemAcento)) {  
+                                        $letraSemAcento = 'U';  
+                                    }  
+                                    echo strtoupper($letraSemAcento);  
+                                    ?>  
+                                </div>
+                                <div><?= htmlspecialchars($r['nome_registrado']) ?></div>
                             </div>
-                            <div><?= htmlspecialchars($r['nome_registrado']) ?></div>
                             </td>  
                             <td>  
 <?php  
