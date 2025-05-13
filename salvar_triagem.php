@@ -8,8 +8,20 @@ $response = ['success' => false, 'message' => ''];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
+        // Iniciar transação
+        $pdo->beginTransaction();
+
+        // Gerar protocolo com base no próximo AUTO_INCREMENT
+        $nextId = $pdo->query("
+            SELECT AUTO_INCREMENT
+            FROM information_schema.TABLES
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'triagem_registros'
+        ")->fetchColumn();
+
+        $protocolo = 'TRG-' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
+
         // Coletar dados do formulário
-        $protocolo           = $_POST['protocolo'] ?? '';
         $nome_requerente     = $_POST['nome_requerente'] ?? '';
         $documento           = $_POST['documento_identificacao'] ?? '';
         $cpf                 = $_POST['cpf'] ?? '';
@@ -48,12 +60,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $filiacao_conjuge
         ]);
 
-        header("Location: triagem.php?success=1");
+        // Finalizar transação
+        $pdo->commit();
+
+        header("Location: triagem.php?success=Cadastro realizado com sucesso!");
         exit;
 
     } catch (Exception $e) {
+        $pdo->rollBack();
         error_log("Erro ao salvar triagem: " . $e->getMessage());
-        header("Location: triagem.php?error=1&msg=" . urlencode($e->getMessage()));
+        header("Location: triagem.php?error=" . urlencode($e->getMessage()));
         exit;
     }
 } else {

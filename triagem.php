@@ -160,8 +160,6 @@ document.addEventListener('DOMContentLoaded',()=>{
         </div>  
         <form method="POST" action="salvar_triagem.php" id="formTriagem">  
             <div class="card-body row g-3">  
-                <input type="hidden" name="protocolo" value="<?= $protocolo ?>">  
-
                 <!-- Seção 1: Dados do Requerente -->  
                 <div class="col-12 mb-2">  
                     <h6 class="text-primary mb-3 border-bottom pb-2">  
