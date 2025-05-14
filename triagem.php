@@ -1662,7 +1662,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         tooltip.hide();  
                         
                         // Atualiza o texto do tooltip  
-                        // btnCopiarSelo.setAttribute('title', 'Copiado!');  
+                        btnCopiarSelo.setAttribute('title', 'Copiado!');  
                         btnCopiarSelo.setAttribute('data-bs-original-title', 'Copiado!');  
                         
                         // Mostra o tooltip atualizado  
