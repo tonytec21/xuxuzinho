@@ -551,22 +551,43 @@ document.addEventListener('DOMContentLoaded',()=>{
                                     </button>  
                                 </div>  
 
-                            <?php elseif ($registro_atual['status'] === 'emitido'): ?>
-                                <div class="d-grid gap-2">
-                                    <div class="py-3 d-flex align-items-center justify-content-center">
-                                        <div class="rounded-circle bg-success p-2 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                            <i data-feather="check-circle" class="text-white" style="width: 24px; height: 24px;"></i>
-                                        </div>
-                                        <div class="fs-5 fw-bold text-success">Certidão Emitida</div>
-                                    </div>
-
-                                    <button class="btn btn-primary btn-lg btn-marcar-entregue d-flex align-items-center justify-content-center" data-id="<?= $registro_atual['id'] ?>">
-                                        <div class="rounded-circle bg-white p-1 me-2">
-                                            <i data-feather="check-square" class="text-primary" style="width: 20px; height: 20px;"></i>
-                                        </div>
-                                        <span>Marcar como Entregue</span>
-                                    </button>
-                                </div>
+                            <?php elseif ($registro_atual['status'] === 'emitido'): ?>  
+                                <div class="d-grid gap-3">  
+                                    <!-- Status header - Centralizado -->  
+                                    <div class="text-center mb-3">  
+                                        <div class="d-inline-flex align-items-center justify-content-center">  
+                                            <div class="rounded-circle bg-success p-2 me-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">  
+                                                <i data-feather="check-circle" class="text-white" style="width: 24px; height: 24px;"></i>  
+                                            </div>  
+                                            <div class="fs-5 fw-bold text-success">Certidão Emitida</div>  
+                                        </div>  
+                                    </div>  
+                                    
+                                    <!-- Número do selo com botão de cópia - Responsivo -->  
+                                    <?php if (!empty($registro_atual['numero_selo'])): ?>  
+                                        <div class="mb-3">  
+                                            <label class="form-label text-muted mb-1">Selo da Certidão</label>  
+                                            <div class="input-group">  
+                                                <input type="text" class="form-control bg-light border-end-0"   
+                                                    id="numeroSelo" value="<?= htmlspecialchars($registro_atual['numero_selo']) ?>"   
+                                                    readonly style="font-family: monospace;">  
+                                                <button class="btn bg-light border border-start-0" type="button" id="btnCopiarSelo"   
+                                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Copiar">  
+                                                    <i data-feather="copy" style="width: 18px; height: 18px;" class="text-secondary"></i>  
+                                                </button>  
+                                            </div>  
+                                        </div>  
+                                    <?php endif; ?>  
+                            
+                                    <!-- Botão marcar como entregue -->  
+                                    <button class="btn btn-primary btn-lg btn-marcar-entregue d-flex align-items-center justify-content-center"   
+                                            data-id="<?= $registro_atual['id'] ?>">  
+                                        <div class="rounded-circle bg-white p-1 me-2">  
+                                            <i data-feather="check-square" class="text-primary" style="width: 20px; height: 20px;"></i>  
+                                        </div>  
+                                        <span>Marcar como Entregue</span>  
+                                    </button>  
+                                </div> 
 
                             <?php elseif ($registro_atual['status'] === 'emitido'): ?>  
                                 <div class="py-3 d-flex align-items-center justify-content-center">  
@@ -1551,6 +1572,48 @@ $(document).on('click', '.btn-reavaliar', function () {
         });
     });
 });
+
+/* ---------- COPIA DADOS DO SELO ---------- */
+document.addEventListener('DOMContentLoaded', function() {  
+    // Inicializa os ícones e tooltips (se ainda não estiverem inicializados)  
+    if (typeof feather !== 'undefined') {  
+        feather.replace();  
+    }  
+    
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));  
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {  
+        return new bootstrap.Tooltip(tooltipTriggerEl);  
+    });  
+    
+    // Função específica para o botão de copiar selo  
+    const btnCopiarSelo = document.getElementById('btnCopiarSelo');  
+    if (btnCopiarSelo) {  
+        btnCopiarSelo.addEventListener('click', function() {  
+            // Encontra o input com o número do selo  
+            const numeroSelo = document.getElementById('numeroSelo');  
+            
+            // Copia o valor para a área de transferência  
+            navigator.clipboard.writeText(numeroSelo.value).then(() => {  
+                // Obtém a instância do tooltip  
+                const tooltip = bootstrap.Tooltip.getInstance(btnCopiarSelo);  
+                
+                // Muda o texto do tooltip para "Copiado"  
+                btnCopiarSelo.setAttribute('data-bs-original-title', 'Copiado!');  
+                
+                // Reexibe o tooltip atualizado  
+                tooltip.hide();  
+                tooltip.show();  
+                
+                // Restaura o texto original após 1.5 segundos  
+                setTimeout(() => {  
+                    btnCopiarSelo.setAttribute('data-bs-original-title', 'Copiar');  
+                }, 1500);  
+            }).catch(err => {  
+                console.error('Erro ao copiar: ', err);  
+            });  
+        });  
+    }  
+}); 
 
 </script>
 
