@@ -1593,20 +1593,66 @@ document.addEventListener('DOMContentLoaded', function() {
         btnCopiarSelo.addEventListener('click', function() {  
             const numeroSelo = document.getElementById('numeroSelo');  
             
-            // Seleciona e copia o texto  
-            numeroSelo.select();  
-            numeroSelo.setSelectionRange(0, 99999); // Para dispositivos móveis  
+            if (!numeroSelo) {  
+                console.error('Elemento numeroSelo não encontrado');  
+                return;  
+            }  
             
-            navigator.clipboard.writeText(numeroSelo.value)  
-                .then(() => {  
+            // Método de cópia mais robusto  
+            const texto = numeroSelo.value;  
+            
+            // Método 1: Usando clipboard API moderna  
+            function copiarComAPI() {  
+                return navigator.clipboard.writeText(texto);  
+            }  
+            
+            // Método 2: Usando método tradicional de seleção e execCommand  
+            function copiarComExecCommand() {  
+                // Seleciona o texto do campo  
+                numeroSelo.select();  
+                numeroSelo.setSelectionRange(0, 99999); // Para dispositivos móveis  
+                
+                // Tenta executar o comando de cópia  
+                return document.execCommand('copy');  
+            }  
+            
+            // Tenta copiar usando diferentes métodos  
+            let sucesso = false;  
+            
+            try {  
+                if (navigator.clipboard) {  
+                    copiarComAPI()  
+                        .then(() => atualizarUI(true))  
+                        .catch(err => {  
+                            console.warn('Falha ao copiar com Clipboard API:', err);  
+                            sucesso = copiarComExecCommand();  
+                            atualizarUI(sucesso);  
+                        });  
+                } else {  
+                    sucesso = copiarComExecCommand();  
+                    atualizarUI(sucesso);  
+                }  
+            } catch (err) {  
+                console.error('Erro ao copiar:', err);  
+                sucesso = false;  
+                atualizarUI(sucesso);  
+            }  
+            
+            // Função para atualizar a UI após a cópia  
+            function atualizarUI(sucesso) {  
+                if (sucesso) {  
+                    console.log('Texto copiado com sucesso:', texto);  
+                    
                     // 1. Muda o ícone para check  
                     const iconElement = btnCopiarSelo.querySelector('i');  
-                    iconElement.setAttribute('data-feather', 'check');  
-                    iconElement.classList.remove('text-secondary');  
-                    iconElement.classList.add('text-success');  
-                    
-                    if (typeof feather !== 'undefined') {  
-                        feather.replace();  
+                    if (iconElement) {  
+                        iconElement.setAttribute('data-feather', 'check');  
+                        iconElement.classList.remove('text-secondary');  
+                        iconElement.classList.add('text-success');  
+                        
+                        if (typeof feather !== 'undefined') {  
+                            feather.replace();  
+                        }  
                     }  
                     
                     // 2. Atualiza o tooltip para mostrar "Copiado"  
@@ -1626,12 +1672,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 3. Após 2 segundos, volta ao estado original  
                     setTimeout(() => {  
                         // Restaura o ícone  
-                        iconElement.setAttribute('data-feather', 'copy');  
-                        iconElement.classList.remove('text-success');  
-                        iconElement.classList.add('text-secondary');  
-                        
-                        if (typeof feather !== 'undefined') {  
-                            feather.replace();  
+                        if (iconElement) {  
+                            iconElement.setAttribute('data-feather', 'copy');  
+                            iconElement.classList.remove('text-success');  
+                            iconElement.classList.add('text-secondary');  
+                            
+                            if (typeof feather !== 'undefined') {  
+                                feather.replace();  
+                            }  
                         }  
                         
                         // Restaura o tooltip original  
@@ -1639,14 +1687,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             tooltip.hide();  
                             btnCopiarSelo.setAttribute('title', 'Copiar');  
                             btnCopiarSelo.setAttribute('data-bs-original-title', 'Copiar');  
-                            // Não reexibe o tooltip após voltar ao estado original  
                         }  
                     }, 2000);  
-                })  
-                .catch(err => {  
-                    console.error('Erro ao copiar: ', err);  
-                });  
+                } else {  
+                    console.error('Falha ao copiar o texto');  
+                    // Feedback visual de falha (opcional)  
+                    alert('Não foi possível copiar o texto. Por favor, selecione e copie manualmente.');  
+                }  
+            }  
         });  
+    } else {  
+        console.warn('Botão de copiar não encontrado na página');  
     }  
 });
 
