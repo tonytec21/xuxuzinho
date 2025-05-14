@@ -1573,47 +1573,82 @@ $(document).on('click', '.btn-reavaliar', function () {
     });
 });
 
-/* ---------- COPIA DADOS DO SELO ---------- */
+/* ---------- COPIA DADOS DO SELO ---------- */  
 document.addEventListener('DOMContentLoaded', function() {  
-    // Inicializa os ícones e tooltips (se ainda não estiverem inicializados)  
+    // Inicializa os ícones Feather  
     if (typeof feather !== 'undefined') {  
         feather.replace();  
     }  
     
+    // Inicializa tooltips do Bootstrap  
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));  
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {  
         return new bootstrap.Tooltip(tooltipTriggerEl);  
     });  
     
-    // Função específica para o botão de copiar selo  
+    // Funcionalidade do botão copiar  
     const btnCopiarSelo = document.getElementById('btnCopiarSelo');  
+    
     if (btnCopiarSelo) {  
         btnCopiarSelo.addEventListener('click', function() {  
-            // Encontra o input com o número do selo  
             const numeroSelo = document.getElementById('numeroSelo');  
             
-            // Copia o valor para a área de transferência  
-            navigator.clipboard.writeText(numeroSelo.value).then(() => {  
-                // Obtém a instância do tooltip  
-                const tooltip = bootstrap.Tooltip.getInstance(btnCopiarSelo);  
-                
-                // Muda o texto do tooltip para "Copiado"  
-                btnCopiarSelo.setAttribute('data-bs-original-title', 'Copiado!');  
-                
-                // Reexibe o tooltip atualizado  
-                tooltip.hide();  
-                tooltip.show();  
-                
-                // Restaura o texto original após 1.5 segundos  
-                setTimeout(() => {  
-                    btnCopiarSelo.setAttribute('data-bs-original-title', 'Copiar');  
-                }, 1500);  
-            }).catch(err => {  
-                console.error('Erro ao copiar: ', err);  
-            });  
+            // Seleciona e copia o texto  
+            numeroSelo.select();  
+            numeroSelo.setSelectionRange(0, 99999); // Para dispositivos móveis  
+            
+            navigator.clipboard.writeText(numeroSelo.value)  
+                .then(() => {  
+                    // 1. Muda o ícone para check  
+                    const iconElement = btnCopiarSelo.querySelector('i');  
+                    iconElement.setAttribute('data-feather', 'check');  
+                    iconElement.classList.remove('text-secondary');  
+                    iconElement.classList.add('text-success');  
+                    
+                    if (typeof feather !== 'undefined') {  
+                        feather.replace();  
+                    }  
+                    
+                    // 2. Atualiza o tooltip para mostrar "Copiado"  
+                    const tooltip = bootstrap.Tooltip.getInstance(btnCopiarSelo);  
+                    if (tooltip) {  
+                        // Esconde o tooltip atual  
+                        tooltip.hide();  
+                        
+                        // Atualiza o texto do tooltip  
+                        btnCopiarSelo.setAttribute('title', 'Copiado!');  
+                        btnCopiarSelo.setAttribute('data-bs-original-title', 'Copiado!');  
+                        
+                        // Mostra o tooltip atualizado  
+                        tooltip.show();  
+                    }  
+                    
+                    // 3. Após 2 segundos, volta ao estado original  
+                    setTimeout(() => {  
+                        // Restaura o ícone  
+                        iconElement.setAttribute('data-feather', 'copy');  
+                        iconElement.classList.remove('text-success');  
+                        iconElement.classList.add('text-secondary');  
+                        
+                        if (typeof feather !== 'undefined') {  
+                            feather.replace();  
+                        }  
+                        
+                        // Restaura o tooltip original  
+                        if (tooltip) {  
+                            tooltip.hide();  
+                            btnCopiarSelo.setAttribute('title', 'Copiar');  
+                            btnCopiarSelo.setAttribute('data-bs-original-title', 'Copiar');  
+                            // Não reexibe o tooltip após voltar ao estado original  
+                        }  
+                    }, 2000);  
+                })  
+                .catch(err => {  
+                    console.error('Erro ao copiar: ', err);  
+                });  
         });  
     }  
-}); 
+});
 
 </script>
 
