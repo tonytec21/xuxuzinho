@@ -1547,7 +1547,7 @@ $(document).on('click', '.btn-reavaliar', function () {
     }).then((result) => {
         if (!result.isConfirmed) return;
 
-        $.post('aprovar_triagem.php', { id: id }, function (resp) {
+        $.post('reavaliar_triagem.php', { id: id }, function (resp) {
             if (resp.success) {
                 Swal.fire({
                     icon: 'success',
