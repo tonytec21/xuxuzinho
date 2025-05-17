@@ -383,19 +383,35 @@ document.addEventListener('DOMContentLoaded',()=>{
                 };  
                 ?>  
                 <div class="card border <?= $statusClass ?> shadow-sm mb-4">  
-                    <div class="card-body d-flex align-items-center justify-content-center <?= $statusBg ?> py-3">  
-                        <div class="d-flex align-items-center">  
-                            <div class="rounded-circle <?= str_replace('text', 'bg', $statusClass) ?> p-2 me-3 d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">  
+                    <div class="card-body <?= $statusBg ?> py-4">  
+                        <!-- Status do Protocolo - Sempre visível -->  
+                        <div class="d-flex flex-column align-items-center text-center mb-3">  
+                            <div class="rounded-circle <?= str_replace('text', 'bg', $statusClass) ?> p-2 mb-3 d-flex justify-content-center align-items-center" style="width: 48px; height: 48px;">  
                                 <i data-feather="<?= $statusIcon ?>" class="text-white" style="width: 24px; height: 24px;"></i>  
                             </div>  
-                            <div class="text-start">  
+                            <div>  
                                 <div class="small text-muted">Status do Protocolo</div>  
                                 <div class="fs-5 fw-bold <?= $statusClass ?>">  
                                     <?= ucfirst($registro_atual['status']) ?>  
                                 </div>  
                             </div>  
                         </div>  
-                    </div>  
+                        
+                        <!-- Motivo da Rejeição - Visível apenas se existir -->  
+                        <?php if (!empty($registro_atual['motivo_rejeicao'])): ?>  
+                        <div class="d-flex justify-content-center mt-2">  
+                            <div class="border-top pt-3 text-center" style="max-width: 600px;">  
+                                <div class="d-flex align-items-start justify-content-center">  
+                                    <!-- <i data-feather="alert-circle" class="text-danger me-2 mt-1" style="width: 20px; height: 20px;"></i>   -->
+                                    <div>  
+                                        <div class="fw-bold text-danger mb-1">Motivo da rejeição:</div>  
+                                        <div><?= htmlspecialchars($registro_atual['motivo_rejeicao']) ?></div>  
+                                    </div>  
+                                </div>  
+                            </div>  
+                        </div>  
+                        <?php endif; ?>   
+                    </div>   
                 </div>  
             </div>
             
@@ -643,21 +659,6 @@ document.addEventListener('DOMContentLoaded',()=>{
                                         <span>Reavaliar Solicitação</span>
                                     </button>
                                 </div>
-
-                                <?php if (!empty($registro_atual['motivo_rejeicao'])): ?>  
-                                    <div class="mt-4 card border-danger">  
-                                        <div class="card-body bg-danger-subtle">  
-                                            <div class="d-flex align-items-start">  
-                                                <i data-feather="alert-circle" class="text-danger me-3" style="width: 20px; height: 20px;"></i>  
-                                                <div>  
-                                                    <div class="fw-bold text-danger mb-1">Motivo da rejeição:</div>  
-                                                    <div><?= htmlspecialchars($registro_atual['motivo_rejeicao']) ?></div>  
-                                                </div>  
-                                            </div>  
-                                        </div>  
-                                    </div>  
-                                <?php endif; ?>  
-
                             <?php endif; ?>  
                         </div>  
                     </div>
