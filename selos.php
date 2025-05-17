@@ -46,10 +46,25 @@ $selos = $stmt->fetchAll();
 $selo_atual = null;  
 
 // Verificar se está em modo de edição (pelo ID do selo)  
-if (isset($_GET['id']) && is_numeric($_GET['id'])) {  
-    $selo_id = $_GET['id'];  
-    
-    // Buscar selo (verificando se pertence ao usuário)  
+/* ------------------------------------------------------------------
+   0. Variáveis de sessão
+------------------------------------------------------------------*/
+$usuario_id   = $_SESSION['usuario_id'] ?? 0;
+$usuario_nome = $_SESSION['nome']       ?? 'Usuário';
+
+/* ------------------------------------------------------------------
+   1. Detectar modo edição e buscar registro + anexos
+------------------------------------------------------------------*/
+$modo_edicao = false;
+$prevSeloId  = null; 
+$nextSeloId  = null;
+$selo_atual  = null;
+$anexos      = [];
+
+if (isset($_GET['id']) && is_numeric($_GET['id'])) {
+    $selo_id = (int) $_GET['id'];
+
+    /* ---------- 1.1  Selo atual ---------------------------------*/
     $stmt = $pdo->prepare("
         SELECT s.*, u.nome AS nome_usuario
         FROM selos s
@@ -58,40 +73,88 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     ");
     $stmt->execute([$selo_id]);
     $selo_atual = $stmt->fetch();
-    
-    if ($selo_atual) {  
-        $modo_edicao = true;  
-        
-        // Buscar anexos deste selo  
-        $stmt = $pdo->prepare("SELECT * FROM anexos WHERE selo_id = ? AND status = 'ativo' ORDER BY data_upload DESC");  
-        $stmt->execute([$selo_id]);  
-        $anexos = $stmt->fetchAll();  
-    }  
-}  
+
+    if ($selo_atual) {
+        /* ---------- 1.2  Selo anterior --------------------------- */
+        $stmt = $pdo->prepare("
+            SELECT id
+            FROM selos
+            WHERE id < ? AND status = 'ativo'
+            ORDER BY id DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$selo_id]);
+        $prevSeloId = $stmt->fetchColumn() ?: null;
+
+        /* ---------- 1.3  Próximo selo ---------------------------- */
+        $stmt = $pdo->prepare("
+            SELECT id
+            FROM selos
+            WHERE id > ? AND status = 'ativo'
+            ORDER BY id ASC
+            LIMIT 1
+        ");
+        $stmt->execute([$selo_id]);
+        $nextSeloId = $stmt->fetchColumn() ?: null;
+
+        $modo_edicao = true;
+
+        /* ---------- 1.4  Anexos deste selo ----------------------- */
+        $stmt = $pdo->prepare("
+            SELECT *
+            FROM anexos
+            WHERE selo_id = ? AND status = 'ativo'
+            ORDER BY data_upload DESC
+        ");
+        $stmt->execute([$selo_id]);
+        $anexos = $stmt->fetchAll();
+    }
+}
 
 // Incluir cabeçalho  
 include 'includes/header.php';  
-?>  
+?>    
 
 <div class="container-fluid py-4">  
     <div class="row mb-4">  
-        <div class="col-12 d-flex justify-content-between align-items-center">  
-            <div>  
-                <h1 class="fw-bold"><?php echo $modo_edicao ? 'Gerenciar Selo' : 'Selos Eletrônicos'; ?></h1>  
-                <p class="text-muted">  
-                    <?php echo $modo_edicao ? 'Adicione documentos ao selo selecionado' : 'Cadastre e gerencie seus selos eletrônicos'; ?>  
+        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center">  
+            <div class="mb-3 mb-md-0">  
+                <h1 class="fw-bold text-gray-800">  
+                    <i data-feather="bookmark" class="me-2 text-primary"></i>  
+                    <?= $modo_edicao ? 'Gerenciar Selo' : 'Selos Eletrônicos' ?>  
+                </h1>  
+                <p class="text-muted lead fs-6">  
+                    <?= $modo_edicao ? 'Adicione documentos ao selo selecionado' : 'Cadastre e gerencie seus selos eletrônicos' ?>  
                 </p>  
             </div>  
             <div class="d-flex gap-2">  
-                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
+                <?php if ($modo_edicao): ?>  
+                    <div class="btn-group" role="group">  
+                        <?php if (!empty($prevSeloId)): ?>  
+                        <a href="selos.php?id=<?= $prevSeloId ?>" class="btn btn-outline-primary" title="Selo anterior">  
+                            <i data-feather="chevron-left"></i>  
+                        </a>  
+                        <?php endif; ?>  
+
+                        <a href="selos.php" class="btn btn-outline-secondary" title="Voltar à lista">  
+                            <i data-feather="list"></i>  
+                        </a>  
+
+                        <?php if (!empty($nextSeloId)): ?>  
+                        <a href="selos.php?id=<?= $nextSeloId ?>" class="btn btn-outline-primary" title="Próximo selo">  
+                            <i data-feather="chevron-right"></i>  
+                        </a>  
+                        <?php endif; ?>  
+                    </div>  
+                <?php endif; ?>  
+                
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
                     <i data-feather="plus" class="me-1" style="width: 16px; height: 16px;"></i> Novo Selo  
                 </button>  
-                <a href="selos.php" class="btn btn-outline-secondary">  
-                    <i data-feather="arrow-left" class="me-1" style="width: 16px; height: 16px;"></i> Voltar  
-                </a>  
             </div>  
         </div>  
-    </div> 
+    </div>
+
     <?php if (!empty($mensagem) && !$sucesso): ?>  
         <div class="alert alert-danger"><?php echo $mensagem; ?></div>  
     <?php elseif (!empty($mensagem) && $sucesso): ?>  
@@ -103,12 +166,65 @@ include 'includes/header.php';
     <?php endif; ?>  
     
     <?php if ($modo_edicao && $selo_atual): ?>  
+        <!-- =====================  STATUS DO SELO  ===================== -->
+        <?php
+        /* ---------- Determina o status do selo ---------- */
+        if (count($anexos) == 0) {
+            $selo_status_key   = 'sem_anexo';
+            $selo_status_label = 'Sem Anexo';
+        } elseif ($selo_atual['enviado_portal'] === 'sim') {
+            $selo_status_key   = 'enviado';
+            $selo_status_label = 'Enviado ao Portal do Selo';
+        } else {
+            $selo_status_key   = 'pendente';
+            $selo_status_label = 'Pendente de Envio';
+        }
+
+        /* ---------- Mapeia classes, cores e ícones ---------- */
+        $statusClass = match($selo_status_key) {
+            'pendente'   => 'border-warning text-warning',
+            'enviado'    => 'border-success text-success',
+            'sem_anexo'  => 'border-danger text-danger',
+            default      => 'border-secondary text-secondary'
+        };
+
+        $statusBg = match($selo_status_key) {
+            'pendente'   => 'bg-warning-subtle',
+            'enviado'    => 'bg-success-subtle',
+            'sem_anexo'  => 'bg-danger-subtle',
+            default      => 'bg-secondary-subtle'
+        };
+
+        $statusIcon = match($selo_status_key) {
+            'pendente'   => 'clock',
+            'enviado'    => 'check-circle',
+            'sem_anexo'  => 'alert-circle',
+            default      => 'help-circle'
+        };
+        ?>
+
+        <div class="card border <?= $statusClass ?> shadow-sm mb-4">
+            <div class="card-body d-flex align-items-center justify-content-center <?= $statusBg ?> py-3">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle <?= str_replace('text','bg',$statusClass) ?> p-2 me-3 d-flex justify-content-center align-items-center" style="width:48px;height:48px;">
+                        <i data-feather="<?= $statusIcon ?>" class="text-white" style="width:24px;height:24px;"></i>
+                    </div>
+                    <div class="text-start">
+                        <!-- <div class="small text-muted">Status do Selo</div> -->
+                        <div class="fs-5 fw-bold <?= $statusClass ?>">
+                            <?= $selo_status_label ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+                
         <!-- Modo de edição de selo -->  
-        <div class="row">  
-            <div class="col-md-4 mb-4">  
-                <div class="card border-0 shadow-sm">  
-                    <div class="card-header bg-white">  
-                        <h5 class="mb-0">Detalhes do Selo</h5>  
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Detalhes do Selo</h5> 
                     </div>  
                     <div class="card-body">  
                         <div class="mb-3">  

@@ -107,7 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">  
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css">  
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css">  
-    <?php include(__DIR__ . '/../css/style.php');?>   
+    <?php include(__DIR__ . '/../css/style.php');?> 
+    <?php include(__DIR__ . '/../css/style-triagem.php');?>  
 </head>  
 <body>  
     <div class="wrapper">  

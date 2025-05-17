@@ -29,8 +29,25 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
             WHERE registro_id = ? AND status = 'ativo'  
             ORDER BY data_upload DESC  
         ");  
-        $stmt->execute([$registro_atual['id']]);  
+                $stmt->execute([$registro_atual['id']]);  
         $anexos = $stmt->fetchAll();  
+        
+        // ――― IDs anterior e próximo para navegação ―――
+        $prevId = $pdo->query("
+            SELECT id 
+              FROM triagem_registros 
+             WHERE id < {$registro_atual['id']} 
+          ORDER BY id DESC 
+             LIMIT 1
+        ")->fetchColumn();
+
+        $nextId = $pdo->query("
+            SELECT id 
+              FROM triagem_registros 
+             WHERE id > {$registro_atual['id']} 
+          ORDER BY id ASC 
+             LIMIT 1
+        ")->fetchColumn();
     }  
 }  
 
@@ -53,7 +70,6 @@ function maskCpf($raw){
 
 include 'includes/header.php';  
 ?>  
-<?php include(__DIR__ . '/css/style-triagem.php');?>  
 
 <!-- SweetAlert2 – feedback (via query-string) -->  
 <?php if (isset($_GET['success']) || isset($_GET['error'])): ?>  
@@ -139,11 +155,25 @@ document.addEventListener('DOMContentLoaded',()=>{
                     <?= $modo_edicao ? 'Adicione documentos ao protocolo selecionado' : 'Cadastre e gerencie os pedidos de certidão' ?>  
                 </p>  
             </div>  
-            <?php if ($modo_edicao): ?>  
-            <a href="triagem.php" class="btn btn-outline-secondary">  
-                <i data-feather="arrow-left" class="me-1"></i> Voltar  
-            </a>  
-            <?php endif; ?>  
+            <?php if ($modo_edicao): ?>
+                <div class="btn-group" role="group">
+                    <?php if (!empty($prevId)): ?>
+                    <a href="triagem.php?id=<?= $prevId ?>" class="btn btn-outline-primary" title="Protocolo anterior">
+                        <i data-feather="chevron-left"></i>
+                    </a>
+                    <?php endif; ?>
+
+                    <a href="triagem.php" class="btn btn-outline-secondary" title="Voltar à lista">
+                        <i data-feather="list"></i>
+                    </a>
+
+                    <?php if (!empty($nextId)): ?>
+                    <a href="triagem.php?id=<?= $nextId ?>" class="btn btn-outline-primary" title="Próximo protocolo">
+                        <i data-feather="chevron-right"></i>
+                    </a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>  
     </div>  
 

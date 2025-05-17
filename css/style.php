@@ -403,19 +403,23 @@ input:checked + .slider:before {
 
 /* Buttons */  
 .btn {  
-    display: inline-block;  
-    font-weight: 400;  
     text-align: center;  
     white-space: nowrap;  
     vertical-align: middle;  
     user-select: none;  
-    border: 1px solid transparent;  
-    padding: 0.375rem 0.75rem;  
     font-size: 1rem;  
     line-height: 1.5;  
-    border-radius: 0.25rem;  
-    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;  
+    border-radius: var(--border-radius);  
+    padding: 0.5rem 1rem;  
+    font-weight: 500;  
+    display: inline-flex;  
+    align-items: center;  
+    justify-content: center;  
+    transition: var(--transition);  
 }  
+
+.btn{box-shadow:var(--shadow-sm)}
+.btn:active{transform:scale(.97)}
 
 .btn-primary {  
     color: #fff;  
