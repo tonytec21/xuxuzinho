@@ -106,7 +106,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
     <!-- DataTables CSS com Bootstrap 5 -->  
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">  
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css">  
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css">  
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css"> 
+     
     <?php include(__DIR__ . '/../css/style.php');?> 
     <?php include(__DIR__ . '/../css/style-triagem.php');?>  
 </head>  
@@ -163,6 +164,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
                                 <span>&nbsp;Livros</span>  
                             </a>  
                         </li> 
+
+                        <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'comunicacoes.php' && !isset($_GET['id'])) ? 'xz-active' : ''; ?>">  
+                            <a href="comunicacoes.php" class="xz-sidebar-link">  
+                                <i data-feather="mail"> </i>  
+                                <span>&nbsp;Comunicações CRC</span>  
+                            </a>  
+                        </li>
 
                         <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'triagem.php' && !isset($_GET['id'])) ? 'xz-active' : ''; ?>">  
                             <a href="triagem.php" class="xz-sidebar-link">  
@@ -233,6 +241,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
                             case 'livros.php':  
                                 echo 'Livros';  
                                 break;  
+                            case 'comunicacoes.php':  
+                                echo 'Comunicações CRC';  
+                                break;
                             case 'configuracoes.php':  
                                 echo 'Configurações';  
                                 break;  
