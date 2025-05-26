@@ -304,7 +304,7 @@ include 'includes/header.php';
               <option value="obito" <?= $filtro_tipo == 'obito' ? 'selected' : '' ?>>Óbito</option>  
               <option value="interdicao" <?= $filtro_tipo == 'interdicao' ? 'selected' : '' ?>>Interdição</option>  
               <option value="curatela" <?= $filtro_tipo == 'curatela' ? 'selected' : '' ?>>Curatela</option>  
-              <option value="outros" <?= $filtro_tipo == 'outros' ? 'selected' : '' ?>>Outros</option>  
+              <option value="alteração de estado civil" <?= $filtro_tipo == 'alteração de estado civil' ? 'selected' : '' ?>>Alteração de estado civil</option>  
             </select>  
           </div>  
           
