@@ -846,7 +846,7 @@ function gerarTextoAnotacao(comunicacao, formatoHTML = false) {
   }  
   
   // Montar o texto da anotação  
-  let textoAnotacao = "Procedo a presente anotação para fazer constar que: ";  
+  let textoAnotacao = "ANOTAÇÃO: Procedo a presente anotação para fazer constar que: ";  
   
   if (paragrafoPrincipal) {  
     textoAnotacao += paragrafoPrincipal;  
