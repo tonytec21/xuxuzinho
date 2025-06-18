@@ -286,10 +286,12 @@ include 'includes/header.php';
                 <div class="card border-0 shadow-sm mb-4">  
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">  
                         <h5 class="mb-0">Anexos do Selo</h5>  
+                        <?php if ($selo_atual['enviado_portal'] !== 'sim'): ?>
                         <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="collapse" data-bs-target="#uploadCollapse" aria-expanded="false" aria-controls="uploadCollapse">  
                             <i data-feather="upload" class="me-1" style="width: 14px; height: 14px;"></i>  
                             Adicionar Anexos  
                         </button>  
+                        <?php endif; ?>
                     </div>  
                     
                     <!-- Área de upload colapsável -->  
