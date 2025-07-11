@@ -74,11 +74,17 @@ $tipos      = $pdo->query("SELECT * FROM tipos_bem ORDER BY nome")->fetchAll();
 $categorias = $pdo->query("SELECT * FROM categorias_bem ORDER BY nome")->fetchAll();
 
 // Contagens para cards
-$total_bens = $pdo->query("SELECT COUNT(*) FROM bens WHERE status = 'ativo'")->fetchColumn();
+$total_bens = $pdo
+  ->query("SELECT COALESCE(SUM(quantidade),0) FROM bens WHERE status = 'ativo'")
+  ->fetchColumn();
 $tipo_counts = $pdo->query("
-    SELECT t.nome, COUNT(b.id) AS qtde
+    SELECT
+      t.nome,
+      COALESCE(SUM(b.quantidade),0) AS qtde
     FROM tipos_bem t
-    LEFT JOIN bens b ON b.tipo_id = t.id AND b.status = 'ativo'
+    LEFT JOIN bens b
+      ON b.tipo_id = t.id
+     AND b.status = 'ativo'
     GROUP BY t.nome
     ORDER BY t.nome
 ")->fetchAll(PDO::FETCH_ASSOC);
