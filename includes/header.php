@@ -178,6 +178,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cadastrar_selo'])) {
                                 <span>&nbsp;Registre-se</span>  
                             </a>  
                         </li>
+
+                        <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'inventory.php') ? 'xz-active' : ''; ?>">
+                            <a href="inventory.php" class="xz-sidebar-link">
+                                <i data-feather="grid"></i>
+                                <span>&nbsp;Inventário de Bens</span>
+                            </a>
+                        </li>
+
                         
                         <?php if (is_admin()): ?>  
                         <li class="xz-sidebar-item <?php echo (basename($_SERVER['PHP_SELF']) == 'aprovacao_usuarios.php') ? 'xz-active' : ''; ?>">  

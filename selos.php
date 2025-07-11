@@ -151,6 +151,11 @@ include 'includes/header.php';
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
                     <i data-feather="plus" class="me-1" style="width: 16px; height: 16px;"></i> Novo Selo  
                 </button>  
+
+                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importarSelosModal">
+                    <i data-feather="upload" class="me-1" style="width:16px;height:16px;"></i> Importar XLSX
+                </button>
+
             </div>  
         </div>  
     </div>
@@ -570,6 +575,47 @@ include 'includes/header.php';
         </div>  
     </div>  
 </div>  
+
+<!-- Modal importar selos em lote -->
+<div class="modal fade" id="importarSelosModal" tabindex="-1" aria-labelledby="importarSelosModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="formImportarSelos" class="modal-content" method="POST" action="importar_selos.php"
+          enctype="multipart/form-data">
+      <div class="modal-header">
+        <h5 class="modal-title" id="importarSelosModalLabel">Importar Selos via XLSX</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">Arquivo XLSX</label>
+          <input type="file" name="xlsx_file" accept=".xlsx,.xls" class="form-control" required>
+          <div class="form-text">Tamanho máximo 10 MB.</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Coluna do número do selo (1 = A, 2 = B…)</label>
+          <input type="number" name="coluna_selo" class="form-control" value="3" min="1">
+        </div>
+
+        <div class="form-check mb-3">
+          <input type="checkbox" class="form-check-input" id="skipHeader" name="pular_cabecalho" checked>
+          <label class="form-check-label" for="skipHeader">Pular primeira linha (cabeçalho)</label>
+        </div>
+
+        <input type="hidden" name="importar_selos" value="1">
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-success">
+          <i data-feather="check-circle" class="me-1" style="width:16px;height:16px;"></i> Importar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 
 <!-- jQuery e scripts necessários -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -1204,5 +1250,58 @@ document.addEventListener('DOMContentLoaded', function() {
     }  
 });  
 </script>
+
+<script>
+document.getElementById('formImportarSelos').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const form   = this;
+    const fileEl = form.querySelector('input[type="file"][name="xlsx_file"]');
+    if (!fileEl.files.length) {
+        Swal.fire('Atenção', 'Selecione um arquivo XLSX.', 'warning');
+        return;
+    }
+    if (fileEl.files[0].size > 10 * 1024 * 1024) {               // 10 MB
+        Swal.fire('Atenção', 'Arquivo maior que 10 MB.', 'warning');
+        return;
+    }
+
+    const fd = new FormData(form);
+    Swal.fire({
+        title: 'Importando…',
+        html: 'Aguarde enquanto processamos o arquivo.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        const resp = await fetch('importar_selos.php', {
+            method: 'POST',
+            body:   fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        const raw = await resp.text();           // lemos como texto primeiro
+        let data;                                // tentaremos converter p/ JSON
+        try {
+            data = JSON.parse(raw);
+        } catch (e) {
+            throw new Error(`Resposta não-JSON (${resp.status}):\n` + raw);
+        }
+
+        if (!resp.ok || !data.success) {
+            throw new Error(data.message || `Falha (HTTP ${resp.status}).`);
+        }
+
+        Swal.fire('Sucesso!', data.message, 'success')
+            .then(() => location.reload());
+
+    } catch (err) {
+        Swal.close();
+        Swal.fire('Erro', err.message || 'Não foi possível enviar o arquivo.', 'error');
+    }
+});
+</script>
+
 
 <?php include 'includes/footer.php'; ?>   
