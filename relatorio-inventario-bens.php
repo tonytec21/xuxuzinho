@@ -80,7 +80,7 @@ foreach ($tipos as $tipo) {
         // Cabeçalho da tabela de bens
         $pdf->SetFont('helvetica', 'B', 9);
         $pdf->SetFillColor(230, 230, 230);
-        $pdf->Cell(10, 7, 'ID', 1, 0, 'C', 1);
+        // $pdf->Cell(10, 7, 'ID', 1, 0, 'C', 1);
         $pdf->Cell(50, 7, 'Modelo', 1, 0, 'L', 1);
         $pdf->Cell(40, 7, 'Configuração', 1, 0, 'L', 1);
         $pdf->Cell(15, 7, 'Qtd.', 1, 0, 'C', 1);
