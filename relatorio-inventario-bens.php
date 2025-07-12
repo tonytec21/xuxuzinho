@@ -86,7 +86,7 @@ class PDFInventario extends TCPDF
 
         $this->SetAutoPageBreak(true, 25);
         $this->SetMargins(30, 35, 30);
-        $this->SetY(30);
+        $this->SetY(20);
     }
 
     public function Footer()
