@@ -206,14 +206,15 @@ foreach ($tipos as $tipo){
         $pdf->Ln(-7);
 
         $rows = array_map(static function($b){
-            return [
-                dash(safeText($b['modelo'])),
-                nl2br(dash(safeText($b['configuracao']))),
-                dash((string)$b['quantidade']),
-                dash(safeText($b['localizacao'])),
-                dash($b['aq'])
-            ];
-        }, $bens);
+    return [
+        dash( safeText($b['modelo'])        , 28),   
+        nl2br( dash( safeText($b['configuracao']), 59) ),
+        dash( (string)$b['quantidade']      ,  5),
+        dash( safeText($b['localizacao'])   , 22),
+        dash( $b['aq']                      , 19)
+    ];
+}, $bens);
+
 
 
         renderTable(
