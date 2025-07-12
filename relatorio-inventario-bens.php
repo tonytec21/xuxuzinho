@@ -20,8 +20,8 @@ class PDFInventario extends TCPDF
         }
         // Conteúdo 80 mm abaixo
         $this->SetAutoPageBreak(true, 20);
-        $this->SetMargins(15, 80, 15);
-        $this->SetY(80);
+        $this->SetMargins(15, 40, 15);
+        $this->SetY(40);
     }
 
     public function Footer()
