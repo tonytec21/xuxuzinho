@@ -192,6 +192,7 @@ foreach ($tipos as $tipo){
 
         $pdf->SetFont('helvetica','B',12);
         $pdf->Cell(0,6,'  CATEGORIA: '.safeText($cat['nome']),0,1,'L');
+        $pdf->Ln(-6);
 
         $rows = array_map(static function($b){
             return [
@@ -205,6 +206,7 @@ foreach ($tipos as $tipo){
 
         renderTable(
             $pdf,
+            '',     
             ['MODELO','CONFIGURAÇÃO','QTD','LOCALIZAÇÃO','AQUISIÇÃO'],
             $rows,
             ['MODELO'=>'28%','CONFIGURAÇÃO'=>'30%','QTD'=>'8%',
