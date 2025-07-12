@@ -209,7 +209,7 @@ foreach ($tipos as $tipo){
             '',     
             ['MODELO','CONFIGURAÇÃO','QTD','LOCALIZAÇÃO','AQUISIÇÃO'],
             $rows,
-            ['MODELO'=>'28%','CONFIGURAÇÃO'=>'30%','QTD'=>'8%',
+            ['MODELO'=>'28%','CONFIGURAÇÃO'=>'32%','QTD'=>'6%',
              'LOCALIZAÇÃO'=>'20%','AQUISIÇÃO'=>'14%']
         );
     }
