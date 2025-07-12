@@ -209,7 +209,7 @@ include 'includes/header.php';
   <div class="card">
     <div class="card-body">
       <div class="table-responsive">
-        <table id="tabelaBens" class="table table-striped table-hover nowrap" style="width:100%">
+        <table id="tabelaBens" class="table table-striped table-hover nowrap" style="width:100%; zoom: 95%">
           <thead>
             <tr>
               <th>Tipo</th>
