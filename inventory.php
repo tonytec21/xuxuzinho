@@ -228,13 +228,8 @@ include 'includes/header.php';
                 <td><?= htmlspecialchars($b['categoria_nome']) ?></td>
                 <td><?= htmlspecialchars($b['modelo']) ?></td>
                 <td><?= $b['quantidade'] ?></td>
-                <td>
-                  <?php
-                    $loc = htmlspecialchars($b['localizacao']);
-                    echo mb_strlen($loc) > 30
-                        ? mb_substr($loc, 0, 30) . '…'
-                        : $loc;
-                  ?>
+                <td class="text-truncate" style="max-width: 200px;">
+                  <?= htmlspecialchars($b['localizacao']) ?>
                 </td>
                 <td><?= $b['data_aquisicao'] ? date('d/m/Y', strtotime($b['data_aquisicao'])) : '–' ?></td>
                 <td class="d-flex gap-1">
