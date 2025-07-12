@@ -417,6 +417,7 @@ include 'includes/header.php';
 <script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>  
 
 <script>
+// Função para decodificar entidades HTML (ex.: &quot; → ")
 function decodeEntities(encoded) {
   const txt = document.createElement('textarea');
   txt.innerHTML = encoded;
@@ -429,6 +430,10 @@ $(document).ready(function(){
   // Inicializa o DataTable
   $('#tabelaBens').DataTable({
     responsive: true,
+    columnDefs: [
+      // força a coluna de Ações a ser escondida no _parent_ e só aparecer no detalhe
+      { className: 'none', targets: -1 }
+    ],
     language: {
       lengthMenu: "Mostrar _MENU_ registros por página",
       zeroRecords: "Nenhum registro encontrado",
@@ -459,8 +464,9 @@ $(document).ready(function(){
     });
   }).trigger('change');
 
-  // Delegated events para funcionar em todas as páginas do DataTable
+  // Delegated events para funcionar em todas as páginas
   $('#tabelaBens')
+    // VISUALIZAR
     .on('click', '.btn-visualizar', function(){
       const btn = $(this);
       $('#view-tipo').text(decodeEntities(btn.data('tipo')));
@@ -478,10 +484,10 @@ $(document).ready(function(){
       $('#view-cadastro').text(decodeEntities(btn.data('cadastro')));
       $('#visualizarBemModal').modal('show');
     })
+    // EDITAR
     .on('click', '.btn-editar', function(){
       const btn  = $(this),
             form = $('#formEditarBem');
-
       $('#edit-id').val(btn.data('id'));
       form.find('[name="tipo_id"]').val(btn.data('tipo')).trigger('change');
       form.find('[name="categoria_id"]').val(btn.data('categoria'));
@@ -493,10 +499,10 @@ $(document).ready(function(){
       form.find('[name="observacoes"]').val(decodeEntities(btn.data('observacoes')));
       $('#editarBemModal').modal('show');
     })
+    // EXCLUIR
     .on('click', '.btn-excluir', function(){
       const id     = $(this).data('id'),
             modelo = decodeEntities($(this).data('modelo'));
-
       Swal.fire({
         title: 'Excluir bem?',
         text: `Deseja realmente excluir "${modelo}"?`,
@@ -511,4 +517,5 @@ $(document).ready(function(){
     });
 });
 </script>
+
 
