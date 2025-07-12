@@ -32,18 +32,14 @@ class PDFInventario extends TCPDF
     {
         $this->SetY(-15);
         $this->SetFont('helvetica', 'I', 8);
-        $this->Cell(
-            0, 10,
-            'Página ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(),
-            0, false, 'C', 0, '', 0, false, 'T', 'M'
-        );
+        $this->Cell(0, 10, 'Página ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(),
+                    0, false, 'C', 0, '', 0, false, 'T', 'M');
     }
 }
 
 // Busca dados de tipos, categorias e bens
-$tipos = $pdo
-    ->query("SELECT id, nome FROM tipos_bem ORDER BY nome")
-    ->fetchAll(PDO::FETCH_ASSOC);
+// 1) todos os tipos
+$tipos = $pdo->query("SELECT id, nome FROM tipos_bem ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
 
 $dataHora = date('d/m/Y H:i');
 
@@ -71,12 +67,7 @@ foreach ($tipos as $tipo) {
     $pdf->SetTextColor(0, 0, 0);
 
     // Busca categorias deste tipo
-    $stmtCat = $pdo->prepare("
-        SELECT id, nome
-        FROM categorias_bem
-        WHERE tipo_id = ?
-        ORDER BY nome
-    ");
+    $stmtCat = $pdo->prepare("SELECT id,nome FROM categorias_bem WHERE tipo_id = ? ORDER BY nome");
     $stmtCat->execute([$tipo['id']]);
     $categorias = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
 
@@ -85,18 +76,19 @@ foreach ($tipos as $tipo) {
         $pdf->SetFont('helvetica', 'B', 11);
         $pdf->Cell(0, 6, '  Categoria: ' . $cat['nome'], 0, 1, 'L');
 
-        // Cabeçalho da tabela de bens (ID removido)
+        // Cabeçalho da tabela de bens
         $pdf->SetFont('helvetica', 'B', 9);
         $pdf->SetFillColor(230, 230, 230);
-        $pdf->Cell(50, 7, 'Modelo',         1, 0, 'L', 1);
-        $pdf->Cell(60, 7, 'Configuração',   1, 0, 'L', 1);
-        $pdf->Cell(15, 7, 'Qtd.',           1, 0, 'C', 1);
-        $pdf->Cell(50, 7, 'Localização',    1, 0, 'L', 1);
-        $pdf->Cell(25, 7, 'Aquisição',      1, 1, 'C', 1);
+        $pdf->Cell(10, 7, 'ID', 1, 0, 'C', 1);
+        $pdf->Cell(50, 7, 'Modelo', 1, 0, 'L', 1);
+        $pdf->Cell(40, 7, 'Configuração', 1, 0, 'L', 1);
+        $pdf->Cell(15, 7, 'Qtd.', 1, 0, 'C', 1);
+        $pdf->Cell(50, 7, 'Localização', 1, 0, 'L', 1);
+        $pdf->Cell(25, 7, 'Aquisição', 1, 1, 'C', 1);
 
         // Busca bens desta categoria
         $stmtBem = $pdo->prepare("
-            SELECT modelo, configuracao, quantidade, localizacao, data_aquisicao
+            SELECT id, modelo, configuracao, quantidade, localizacao, data_aquisicao
             FROM bens
             WHERE tipo_id = ? AND categoria_id = ? AND status = 'ativo'
             ORDER BY modelo
@@ -107,36 +99,18 @@ foreach ($tipos as $tipo) {
         // Exibe cada bem
         $pdf->SetFont('helvetica', '', 8);
         foreach ($bens as $bem) {
-            // Nova página se atingir margem
+            // Se ultrapassar a margem inferior, adiciona página e reimprime cabeçalhos
             if ($pdf->GetY() > 270) {
                 $pdf->AddPage();
             }
+            $pdf->Cell(10, 6, $bem['id'], 1, 0, 'C');
             $pdf->Cell(50, 6, mb_strimwidth($bem['modelo'], 0, 30, '…'), 1, 0, 'L');
-            // Configuração completa, sem abreviação
-            $pdf->MultiCell(
-                60,    // largura da célula
-                6,     // altura da linha
-                $bem['configuracao'],
-                1,     // borda
-                'L',   // alinhamento
-                false, // preenchimento
-                0,     // posição x (continua na mesma linha)
-                '',    // posição y (auto)
-                true,  // quebra automática
-                0,     // max altura
-                false, // ignorar altura mínima
-                true,  // autopular primeira linha
-                6,     // altura mínima da célula
-                'M'    // alinhamento vertical
-            );
+            $pdf->Cell(40, 6, mb_strimwidth($bem['configuracao'], 0, 25, '…'), 1, 0, 'L');
             $pdf->Cell(15, 6, $bem['quantidade'], 1, 0, 'C');
-            $pdf->Cell(50, 6,
-                mb_strimwidth($bem['localizacao'], 0, 25, '…'),
-                1, 0, 'L'
-            );
+            $pdf->Cell(50, 6, mb_strimwidth($bem['localizacao'], 0, 25, '…'), 1, 0, 'L');
             $dataAqu = $bem['data_aquisicao']
-                ? date('d/m/Y', strtotime($bem['data_aquisicao']))
-                : '–';
+                      ? date('d/m/Y', strtotime($bem['data_aquisicao']))
+                      : '–';
             $pdf->Cell(25, 6, $dataAqu, 1, 1, 'C');
         }
 
@@ -147,4 +121,4 @@ foreach ($tipos as $tipo) {
 }
 
 // Gera o arquivo para o browser
-$pdf->Output('Relatorio_Inventario_Bens.pdf', 'I');
+$pdf->Output('Relatorio_Inventory_Bens.pdf', 'I');
