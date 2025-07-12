@@ -96,17 +96,29 @@ foreach ($tipos as $tipo) {
 
         if (count($bens)) {
             // monta tabela em HTML
-            $html = '<table border="1" cellpadding="4" cellspacing="0">
+            // Cabeçalho da tabela de bens
+            $pdf->SetFont('helvetica', 'B', 9);
+            $pdf->SetFillColor(230, 230, 230);
+            // monta tabela em HTML com layout fixo e colgroup
+            $html = '<table border="1" cellpadding="4" cellspacing="0" style="table-layout:fixed; width:100%;">
+                <colgroup>
+                <col style="width:30%;">
+                <col style="width:30%;">
+                <col style="width:10%;">
+                <col style="width:20%;">
+                <col style="width:10%;">
+                </colgroup>
                 <thead style="background-color:#E6E6E6;">
                     <tr>
-                        <th style="width:30%;">Modelo</th>
-                        <th style="width:30%;">Configuração</th>
-                        <th style="width:10%;text-align:center;">Qtd.</th>
-                        <th style="width:20%;">Localização</th>
-                        <th style="width:10%;text-align:center;">Aquisição</th>
+                        <th>Modelo</th>
+                        <th>Configuração</th>
+                        <th style="text-align:center;">Qtd.</th>
+                        <th>Localização</th>
+                        <th style="text-align:center;">Aquisição</th>
                     </tr>
                 </thead>
                 <tbody>';
+
             foreach ($bens as $bem) {
                 $dataAqu = $bem['data_aquisicao']
                           ? date('d/m/Y', strtotime($bem['data_aquisicao']))
