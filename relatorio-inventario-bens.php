@@ -205,7 +205,6 @@ foreach ($tipos as $tipo){
 
         renderTable(
             $pdf,
-            '',                                   // sem subtítulo → sem espaço extra
             ['MODELO','CONFIGURAÇÃO','QTD','LOCALIZAÇÃO','AQUISIÇÃO'],
             $rows,
             ['MODELO'=>'28%','CONFIGURAÇÃO'=>'30%','QTD'=>'8%',
