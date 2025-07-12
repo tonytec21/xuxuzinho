@@ -199,7 +199,7 @@ foreach ($tipos as $tipo) {
 
         /* título da categoria */
         $pdf->SetFont('helvetica', 'B', 12);
-        $pdf->Cell(0, 6, '  Categoria: ' . $cat['nome'], 0, 1, 'L');
+        $pdf->Cell(0, 6, '  CATEGORIA: ' . $cat['nome'], 0, 1, 'L');
         $pdf->Ln(1);
 
         /* linhas para a função renderTable */
@@ -215,7 +215,6 @@ foreach ($tipos as $tipo) {
 
         renderTable(
             $pdf,
-            'Itens da Categoria',
             ['MODELO', 'CONFIGURAÇÃO', 'QTD', 'LOCALIZAÇÃO', 'AQUISIÇÃO'],
             $rows,
             ['MODELO' => '28%',
