@@ -1,124 +1,229 @@
 <?php
-// session_check.php: verifica se o usuário está logado
+/**
+ * relatorio-inventario-bens.php
+ * Gera um PDF (TCPDF) com o inventário completo de bens,
+ * mantendo exatamente a mesma estrutura do relatório de caixa.
+ */
+
+/* ------------------------------------------------------------------ */
+/* INCLUDES / PRÉ-REQUISITOS                                          */
+/* ------------------------------------------------------------------ */
 require_once 'includes/auth_check.php';
 require_once 'includes/db_connection.php';
 require_once 'includes/functions.php';
+require_once __DIR__ . '/tcpdf/tcpdf.php';  // biblioteca já existente
 
-// Inclui a biblioteca TCPDF
-require_once __DIR__ . '/tcpdf/tcpdf.php';
-
-// Seta o fuso horário
 date_default_timezone_set('America/Sao_Paulo');
 
+/* ------------------------------------------------------------------ */
+/* BUSCA DE DADOS                                                     */
+/* ------------------------------------------------------------------ */
+
+/* 1. Contagens gerais para os “cards” */
+$totalBens = $pdo->query("SELECT COALESCE(SUM(quantidade),0) FROM bens WHERE status='ativo'")
+                 ->fetchColumn();
+
+$qtyPorTipo = $pdo->query("
+    SELECT t.nome,
+           COALESCE(SUM(b.quantidade),0) AS qtde
+      FROM tipos_bem t
+ LEFT JOIN bens b ON b.tipo_id = t.id AND b.status = 'ativo'
+  GROUP BY t.nome
+  ORDER BY t.nome
+")->fetchAll(PDO::FETCH_ASSOC);
+
+/* 2. Listagem hierárquica para tabelas (Tipo → Categoria → Bens) */
+$tipos = $pdo->query("SELECT id, nome FROM tipos_bem ORDER BY nome")
+             ->fetchAll(PDO::FETCH_ASSOC);
+
+/* ------------------------------------------------------------------ */
+/* CÁLCULO DE DADOS P/ CARDS                                          */
+/* ------------------------------------------------------------------ */
+$cards = ['TOTAL DE BENS' => $totalBens];
+foreach ($qtyPorTipo as $q) {
+    $cards[$q['nome']] = $q['qtde'];
+}
+
+/* Paleta de cores (pode trocar) */
+$cardColors = [
+    'TOTAL DE BENS' => '#0a5d0a',
+] + array_combine(
+        array_column($qtyPorTipo,'nome'),
+        ['#007bff','#6f42c1','#fd7e14','#17a2b8','#dc3545','#20c997','#ffc107']
+    );
+
+/* ------------------------------------------------------------------ */
+/* CLASSE PDF                                                         */
+/* ------------------------------------------------------------------ */
 class PDFInventario extends TCPDF
 {
-    // Cabeçalho com timbrado
     public function Header()
     {
-        $img = __DIR__ . '/../atlas/style/img/timbrado.png';
+        $logo = __DIR__ . '/../atlas/style/img/timbrado.png';
         $this->SetAutoPageBreak(false, 0);
         $this->SetMargins(0, 0, 0);
-        if (file_exists($img)) {
-            $this->Image($img, 0, 0, 210, 297, 'PNG', '', '', false, 300);
+        if (file_exists($logo)) {
+            $this->Image($logo, 0, 0, 210, 297, 'PNG');
         }
-        // Restaura margens para o conteúdo
-        $this->SetAutoPageBreak(true, 20);
-        $this->SetMargins(15, 30, 15);
-        $this->SetY(30);
+        /* conteúdo a partir de 45 mm */
+        $this->SetAutoPageBreak(true, 25);
+        $this->SetMargins(25, 45, 25);
+        $this->SetY(35);
     }
-
-    // Rodapé com número de páginas
     public function Footer()
     {
         $this->SetY(-15);
-        $this->SetFont('helvetica', 'I', 8);
-        $this->Cell(0, 10, 'Página ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(),
-                    0, false, 'C', 0, '', 0, false, 'T', 'M');
+        $this->SetFont('helvetica','I',8);
+        $this->Cell(0,10,'Página '.$this->getAliasNumPage().' de '.$this->getAliasNbPages(),0,0,'L');
     }
 }
 
-// Busca dados de tipos, categorias e bens
-// 1) todos os tipos
-$tipos = $pdo->query("SELECT id, nome FROM tipos_bem ORDER BY nome")->fetchAll(PDO::FETCH_ASSOC);
+/* ------------------------------------------------------------------ */
+/* FUNÇÃO GENÉRICA DE TABELA                                          */
+/* ------------------------------------------------------------------ */
+function renderTable(TCPDF $pdf, $title, array $headers, array $dataRows, array $colWidths = [])
+{
+    if (!$dataRows) return;
 
-$dataHora = date('d/m/Y H:i');
+    $pdf->SetFont('helvetica','B',12);
+    $pdf->Cell(0,8,mb_strtoupper($title,'UTF-8'),0,1,'L');
+    $pdf->SetFont('helvetica','',9);
 
-// Cria o PDF
-$pdf = new PDFInventario('P', 'mm', 'A4', true, 'UTF-8', false);
-$pdf->SetCreator('BCLOUD');
-$pdf->SetAuthor($_SESSION['usuario_nome']);
-$pdf->SetTitle('Relatório de Inventário de Bens');
-$pdf->SetSubject('Inventário');
-$pdf->SetMargins(15, 30, 15);
+    $html = '<table border="1" cellpadding="3"><thead style="background:#e6e6e6;"><tr>';
+    foreach ($headers as $h) {
+        $w = $colWidths[$h] ?? '';
+        $html .= '<th'.($w?" style=\"width:$w;\"":'').'>'.$h.'</th>';
+    }
+    $html .= '</tr></thead><tbody>';
+
+    foreach ($dataRows as $row) {
+        $html .= '<tr>';
+        foreach ($row as $i=>$cell) {
+            $h = $headers[$i];
+            $w = $colWidths[$h] ?? '';
+            $html .= '<td'.($w?" style=\"width:$w;\"":'').'>'.$cell.'</td>';
+        }
+        $html .= '</tr>';
+    }
+
+    $html .= '</tbody></table><br>';
+    $pdf->writeHTML($html, true, false, true, false, '');
+}
+
+/* ------------------------------------------------------------------ */
+/* GERAR PDF                                                          */
+/* ------------------------------------------------------------------ */
+$pdf = new PDFInventario();
+$pdf->SetTitle('Inventário de Bens');
 $pdf->AddPage();
-$pdf->SetFont('helvetica', 'B', 14);
-$pdf->Cell(0, 0, 'RELATÓRIO DE INVENTÁRIO DE BENS', 0, 1, 'C');
-$pdf->Ln(5);
-$pdf->SetFont('helvetica', '', 10);
-$pdf->Cell(0, 0, "Data/hora: $dataHora", 0, 1, 'R');
-$pdf->Ln(5);
 
-// Para cada tipo, exibe suas categorias e bens
+/* Título */
+$pdf->SetFont('helvetica','B',14);
+$pdf->Cell(0,10,'RELATÓRIO DE INVENTÁRIO DE BENS',0,1,'C');
+$pdf->Ln(1);
+$pdf->SetFont('helvetica','',11);
+$pdf->Cell(0,8,'Gerado em: '.date('d/m/Y H:i'),0,1,'C');
+$pdf->Ln(2);
+
+/* ---------------- CARDS ---------------- */
+$html = '<table cellspacing="5" cellpadding="5" border="0" width="100%">';
+$col = 0;
+foreach ($cards as $titulo=>$valor) {
+    $cor = $cardColors[$titulo] ?? '#007bff';
+    if ($col%3==0) $html.='<tr>';
+    $html.='<td width="33%" style="
+               background:'.$cor.';
+               color:#fff;border-radius:12px;text-align:center;">
+            <div style=\"font-size:10px;font-weight:bold;\">
+              '.mb_strtoupper($titulo,'UTF-8').'<br>
+              <span style=\"font-size:16px;\">'.$valor.'</span>
+            </div></td>';
+    $col++;
+    if ($col%3==0) $html.='</tr>';
+}
+if ($col%3!=0) $html.=str_repeat('<td></td>',3-($col%3)).'</tr>';
+$html.='</table><br>';
+$pdf->writeHTML($html,true,false,true,false,'');
+
+/* -------------- TABELAS DETALHADAS -------------- */
 foreach ($tipos as $tipo) {
-    // Cabeçalho do tipo
-    $pdf->SetFont('helvetica', 'B', 12);
-    $pdf->SetTextColor(0, 0, 64);
-    $pdf->Cell(0, 8, 'Tipo: ' . $tipo['nome'], 0, 1, 'L');
-    $pdf->SetTextColor(0, 0, 0);
+    /* cabeçalho do tipo */
+    $pdf->SetFont('helvetica','B',12);
+    $pdf->Cell(0,8,'Tipo: '.$tipo['nome'],0,1,'L');
+    $pdf->Ln(2);
 
-    // Busca categorias deste tipo
-    $stmtCat = $pdo->prepare("SELECT id,nome FROM categorias_bem WHERE tipo_id = ? ORDER BY nome");
-    $stmtCat->execute([$tipo['id']]);
-    $categorias = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
+    /* categorias deste tipo */
+    $cats = $pdo->prepare("SELECT id,nome FROM categorias_bem WHERE tipo_id=? ORDER BY nome");
+    $cats->execute([$tipo['id']]);
+    foreach ($cats->fetchAll(PDO::FETCH_ASSOC) as $cat) {
 
-    foreach ($categorias as $cat) {
-        // Cabeçalho da categoria
-        $pdf->SetFont('helvetica', 'B', 11);
-        $pdf->Cell(0, 6, '  Categoria: ' . $cat['nome'], 0, 1, 'L');
-
-        // Cabeçalho da tabela de bens
-        $pdf->SetFont('helvetica', 'B', 9);
-        $pdf->SetFillColor(230, 230, 230);
-        // $pdf->Cell(10, 7, 'ID', 1, 0, 'C', 1);
-        $pdf->Cell(50, 7, 'Modelo', 1, 0, 'L', 1);
-        $pdf->Cell(40, 7, 'Configuração', 1, 0, 'L', 1);
-        $pdf->Cell(15, 7, 'Qtd.', 1, 0, 'C', 1);
-        $pdf->Cell(50, 7, 'Localização', 1, 0, 'L', 1);
-        $pdf->Cell(25, 7, 'Aquisição', 1, 1, 'C', 1);
-
-        // Busca bens desta categoria
-        $stmtBem = $pdo->prepare("
-            SELECT id, modelo, configuracao, quantidade, localizacao, data_aquisicao
-            FROM bens
-            WHERE tipo_id = ? AND categoria_id = ? AND status = 'ativo'
-            ORDER BY modelo
+        /* bens da categoria */
+        $stm = $pdo->prepare("
+            SELECT modelo, configuracao, quantidade, localizacao,
+                   IF(data_aquisicao IS NULL,'–',DATE_FORMAT(data_aquisicao,'%d/%m/%Y')) AS dataaq
+              FROM bens
+             WHERE tipo_id=? AND categoria_id=? AND status='ativo'
+             ORDER BY modelo
         ");
-        $stmtBem->execute([$tipo['id'], $cat['id']]);
-        $bens = $stmtBem->fetchAll(PDO::FETCH_ASSOC);
+        $stm->execute([$tipo['id'],$cat['id']]);
+        $bens = $stm->fetchAll(PDO::FETCH_ASSOC);
+        if (!$bens) continue;
 
-        // Exibe cada bem
-        $pdf->SetFont('helvetica', '', 8);
-        foreach ($bens as $bem) {
-            // Se ultrapassar a margem inferior, adiciona página e reimprime cabeçalhos
-            if ($pdf->GetY() > 270) {
-                $pdf->AddPage();
-            }
-            // $pdf->Cell(10, 6, $bem['id'], 1, 0, 'C');
-            $pdf->Cell(50, 6, mb_strimwidth($bem['modelo'], 0, 30, '…'), 1, 0, 'L');
-            $pdf->Cell(40, 6, mb_strimwidth($bem['configuracao'], 0, 25, '…'), 1, 0, 'L');
-            $pdf->Cell(15, 6, $bem['quantidade'], 1, 0, 'C');
-            $pdf->Cell(50, 6, mb_strimwidth($bem['localizacao'], 0, 25, '…'), 1, 0, 'L');
-            $dataAqu = $bem['data_aquisicao']
-                      ? date('d/m/Y', strtotime($bem['data_aquisicao']))
-                      : '–';
-            $pdf->Cell(25, 6, $dataAqu, 1, 1, 'C');
+        /* título da categoria */
+        $pdf->SetFont('helvetica','B',11);
+        $pdf->Cell(0,6,'  Categoria: '.$cat['nome'],0,1,'L');
+        $pdf->Ln(1);
+
+        /* prepara linhas */
+        $rows=[];
+        foreach ($bens as $b) {
+            $rows[]=[
+                htmlspecialchars($b['modelo']),
+                nl2br(htmlspecialchars($b['configuracao'])),
+                $b['quantidade'],
+                htmlspecialchars($b['localizacao']),
+                $b['dataaq']
+            ];
         }
 
-        $pdf->Ln(2);
+        /* renderização */
+        renderTable(
+            $pdf,
+            'Itens da Categoria',
+            ['MODELO','CONFIGURAÇÃO','QTD','LOCALIZAÇÃO','AQUISIÇÃO'],
+            $rows,
+            ['MODELO'=>'30%','CONFIGURAÇÃO'=>'30%','QTD'=>'10%','LOCALIZAÇÃO'=>'20%','AQUISIÇÃO'=>'10%']
+        );
     }
-
-    $pdf->Ln(4);
 }
 
-// Gera o arquivo para o browser
-$pdf->Output('Relatorio_Inventory_Bens.pdf', 'I');
+/* ------------- GRÁFICO POR TIPO ------------- */
+$pdf->AddPage();
+$pdf->SetFont('helvetica','B',14);
+$pdf->Cell(0,10,'GRÁFICO DE DISTRIBUIÇÃO POR TIPO',0,1,'C');
+$pdf->Ln(3);
+
+$labels = array_column($qtyPorTipo,'nome');
+$values = array_column($qtyPorTipo,'qtde');
+$colors = ["#007bff","#6f42c1","#fd7e14","#17a2b8","#dc3545","#20c997","#ffc107"];
+
+foreach ($values as &$v) $v=intval($v); unset($v);
+
+$chartCfg = [
+  'type'=>'bar',
+  'data'=>['labels'=>$labels,
+           'datasets'=>[['data'=>$values,
+                         'backgroundColor'=>array_slice($colors,0,count($values))]]],
+  'options'=>['plugins'=>['legend'=>false]]
+];
+$chartUrl='https://quickchart.io/chart?c='.urlencode(json_encode($chartCfg)).'&format=png&backgroundColor=white';
+$tmp = tempnam(sys_get_temp_dir(),'chart_').'.png';
+@file_put_contents($tmp,file_get_contents($chartUrl));
+if (file_exists($tmp)) {
+    $pdf->Image($tmp, 25, 60, 160, 90);
+    unlink($tmp);
+}
+
+/* ------------------------------------------------------------------ */
+ob_clean();
+$pdf->Output('Inventario_Bens_'.date('Ymd_His').'.pdf','I');
