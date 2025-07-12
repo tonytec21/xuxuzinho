@@ -171,7 +171,7 @@ $pdf->Ln(1);
 
 /* ----------- DETALHAMENTO ---------------------------------------- */
 foreach ($tipos as $tipo){
-    $pdf->Ln(3);
+    $pdf->Ln(5);
     $pdf->SetFont('helvetica','B',13);
     $pdf->Cell(0,8,'Tipo: '.safeText($tipo['nome']),0,1,'L');
     $pdf->Ln(0);
