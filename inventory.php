@@ -128,6 +128,9 @@ include 'includes/header.php';
   <div class="row mb-3">
     <div class="col d-flex flex-wrap gap-2 align-items-center">
       <h1 class="h3 me-auto">Inventário de Bens</h1>
+      <a href="relatorio-inventario-bens.php" target="_blank" class="btn btn-success">
+        <i data-feather="download" class="me-1"></i> Relatório
+      </a>
       <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#novoTipoModal">
         <i data-feather="layers" class="me-1"></i> Novo Tipo
       </button>
