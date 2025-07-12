@@ -159,37 +159,6 @@ $pdf->SetFont('helvetica', '', 11);
 $pdf->Cell(0, 8, 'Gerado em: ' . date('d/m/Y H:i'), 0, 1, 'C');
 $pdf->Ln(2);
 
-/* -- CARDS --------------------------------------------------------- */
-$html = '<table cellspacing="5" cellpadding="5" border="0" width="100%">';
-$col = 0;
-
-foreach ($cards as $titulo => $valor) {
-    $cor = $cardColors[$titulo] ?? '#007bff';
-
-    if ($col % 3 === 0) $html .= '<tr>';
-
-    $html .= '
-        <td width="33%" style="
-            background:' . $cor . ';
-            color:#fff;
-            border-radius:12px;
-            text-align:center;
-        ">
-            <div style=\"font-size:10px;font-weight:bold;\">
-                ' . mb_strtoupper($titulo, 'UTF-8') . '<br>
-                <span style=\"font-size:16px;\">' . $valor . '</span>
-            </div>
-        </td>';
-
-    $col++;
-    if ($col % 3 === 0) $html .= '</tr>';
-}
-if ($col % 3 !== 0) {
-    $html .= str_repeat('<td></td>', 3 - ($col % 3)) . '</tr>';
-}
-$html .= '</table><br>';
-$pdf->writeHTML($html, true, false, true, false, '');
-
 /* -- Tabelas detalhadas ------------------------------------------- */
 foreach ($tipos as $tipo) {
     /* cabeçalho do tipo */
