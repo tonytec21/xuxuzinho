@@ -159,7 +159,7 @@ $pdf->Ln(1);
 
 /* ----------- DETALHAMENTO ---------------------------------------- */
 foreach ($tipos as $tipo){
-    $pdf->Ln(4);
+    $pdf->Ln(5);
     $pdf->SetFont('helvetica','B',13);
     $pdf->Cell(0,8,'Tipo: '.safeText($tipo['nome']),0,1,'L');
     $pdf->Ln(0);
@@ -192,7 +192,7 @@ foreach ($tipos as $tipo){
 
         $pdf->SetFont('helvetica','B',11);
         $pdf->Cell(0,6,'  Categoria: '.safeText($cat['nome']),0,1,'L');
-        $pdf->Ln(-7);
+        $pdf->Ln(-6);
 
         $rows = array_map(static function($b){
             return [
