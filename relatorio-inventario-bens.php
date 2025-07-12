@@ -3,7 +3,6 @@
 require_once 'includes/auth_check.php';
 require_once 'includes/db_connection.php';
 require_once 'includes/functions.php';
-checkSession();
 
 // Inclui a biblioteca TCPDF
 require_once __DIR__ . '/tcpdf/tcpdf.php';
