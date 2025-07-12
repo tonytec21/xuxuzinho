@@ -215,6 +215,7 @@ foreach ($tipos as $tipo) {
 
         renderTable(
             $pdf,
+            'Itens da Categoria',
             ['MODELO', 'CONFIGURAÇÃO', 'QTD', 'LOCALIZAÇÃO', 'AQUISIÇÃO'],
             $rows,
             ['MODELO' => '28%',
