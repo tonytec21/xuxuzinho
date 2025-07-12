@@ -82,7 +82,7 @@ class PDFInventario extends TCPDF
 
         /* Conteúdo a partir de Y = 45 mm */
         $this->SetAutoPageBreak(true, 25);
-        $this->SetMargins(25, 45, 25);
+        $this->SetMargins(25, 40, 25);
         $this->SetY(35);
     }
 
@@ -111,7 +111,7 @@ function renderTable(
 ) {
     if (!$dataRows) return;
 
-    $pdf->SetFont('helvetica', 'B', 12);
+    $pdf->SetFont('helvetica', 'B', 11);
     $pdf->Cell(0, 8, mb_strtoupper($title, 'UTF-8'), 0, 1, 'L');
     $pdf->SetFont('helvetica', '', 9);
 
@@ -193,7 +193,7 @@ $pdf->writeHTML($html, true, false, true, false, '');
 /* -- Tabelas detalhadas ------------------------------------------- */
 foreach ($tipos as $tipo) {
     /* cabeçalho do tipo */
-    $pdf->SetFont('helvetica', 'B', 12);
+    $pdf->SetFont('helvetica', 'B', 14);
     $pdf->Cell(0, 8, 'Tipo: ' . $tipo['nome'], 0, 1, 'L');
     $pdf->Ln(2);
 
@@ -229,7 +229,7 @@ foreach ($tipos as $tipo) {
         if (!$bens) continue;
 
         /* título da categoria */
-        $pdf->SetFont('helvetica', 'B', 11);
+        $pdf->SetFont('helvetica', 'B', 12);
         $pdf->Cell(0, 6, '  Categoria: ' . $cat['nome'], 0, 1, 'L');
         $pdf->Ln(1);
 
@@ -249,11 +249,11 @@ foreach ($tipos as $tipo) {
             'Itens da Categoria',
             ['MODELO', 'CONFIGURAÇÃO', 'QTD', 'LOCALIZAÇÃO', 'AQUISIÇÃO'],
             $rows,
-            ['MODELO' => '30%',
+            ['MODELO' => '28%',
              'CONFIGURAÇÃO' => '30%',
-             'QTD' => '10%',
+             'QTD' => '8%',
              'LOCALIZAÇÃO' => '20%',
-             'AQUISIÇÃO' => '10%']
+             'AQUISIÇÃO' => '14%']
         );
     }
 }
