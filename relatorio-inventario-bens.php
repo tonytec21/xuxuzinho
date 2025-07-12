@@ -105,10 +105,10 @@ foreach ($tipos as $tipo) {
                 $pdf->AddPage();
             }
             // $pdf->Cell(10, 6, $bem['id'], 1, 0, 'C');
-            $pdf->Cell(50, 6, mb_strimwidth($bem['modelo'], 0, 30, '…'), 1, 0, 'L');
-            $pdf->Cell(40, 6, mb_strimwidth($bem['configuracao'], 0, 25, '…'), 1, 0, 'L');
+            $pdf->Cell(50, 6, $bem['modelo'], 1, 0, 'L');
+            $pdf->Cell(40, 6, $bem['configuracao'], 1, 0, 'L');
             $pdf->Cell(15, 6, $bem['quantidade'], 1, 0, 'C');
-            $pdf->Cell(50, 6, mb_strimwidth($bem['localizacao'], 0, 25, '…'), 1, 0, 'L');
+            $pdf->Cell(50, 6, $bem['localizacao'], 1, 0, 'L');
             $dataAqu = $bem['data_aquisicao']
                       ? date('d/m/Y', strtotime($bem['data_aquisicao']))
                       : '–';
