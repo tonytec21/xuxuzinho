@@ -156,7 +156,7 @@ $pdf->Cell(0,10,'RELATÓRIO DE INVENTÁRIO DE BENS',0,1,'C');
 $pdf->Ln(1);
 $pdf->SetFont('helvetica','',11);
 $pdf->Cell(0,8,'Gerado em: '.date('d/m/Y H:i'),0,1,'C');
-$pdf->Ln(2);
+$pdf->Ln(1);
 
 /* ----------- DETALHAMENTO ---------------------------------------- */
 foreach ($tipos as $tipo){
@@ -192,7 +192,7 @@ foreach ($tipos as $tipo){
 
         $pdf->SetFont('helvetica','B',12);
         $pdf->Cell(0,6,'  CATEGORIA: '.safeText($cat['nome']),0,1,'L');
-        $pdf->Ln(1);
+        $pdf->Ln(-2);
 
         $rows = array_map(static function($b){
             return [
