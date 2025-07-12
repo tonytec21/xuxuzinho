@@ -120,7 +120,7 @@ function renderTable(
 
     $html = '<table border="1" cellpadding="3">
               <thead>
-                <tr style="background:#e6e6e6!important;font-weight:bold;">';
+                <tr style="background:#e6e6e6;font-weight:bold;">';
 
     foreach ($headers as $h){
         $w = $colWidths[$h] ?? '';
@@ -192,7 +192,7 @@ foreach ($tipos as $tipo){
 
         $pdf->SetFont('helvetica','B',11);
         $pdf->Cell(0,6,'  Categoria: '.safeText($cat['nome']),0,1,'L');
-        $pdf->Ln(-6);
+        $pdf->Ln(-7);
 
         $rows = array_map(static function($b){
             return [
