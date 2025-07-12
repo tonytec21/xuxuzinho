@@ -1,13 +1,4 @@
 <?php
-/**
- * relatorio-inventario-bens.php
- * Gera um PDF (TCPDF) com o inventário completo de bens,
- * aproveitando o mesmo “esqueleto” visual do relatório de caixa.
- */
-
-/* ------------------------------------------------------------------ */
-/* INCLUDES / INICIALIZAÇÃO                                           */
-/* ------------------------------------------------------------------ */
 require_once 'includes/auth_check.php';
 require_once 'includes/db_connection.php';
 require_once 'includes/functions.php';
@@ -24,19 +15,16 @@ function safeText(string $str): string
     return htmlspecialchars($decoded, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/* NOVO ➜ devolve uma linha de “-” proporcional ao tamanho da célula -------------- */
 function dash(string|null $value, int $len = 15): string
 {
     $trim = trim((string)$value);
 
-    // se o campo está vazio, devolve uma string de hífens do tamanho especificado
     if ($trim === '' || $trim === '–') {
         return str_repeat('-', $len);
     }
 
-    return $trim;   // caso contrário devolve o conteúdo normal
+    return $trim;  
 }
-
 
 /* ------------------------------------------------------------------ */
 /* BUSCA DE DADOS (cards, hierarquia)                                 */
@@ -96,7 +84,7 @@ class PDFInventario extends TCPDF
             $this->Image($logo, 0, 0, 210, 297, 'PNG');
         }
 
-        $this->SetAutoPageBreak(true, 25);
+        $this->SetAutoPageBreak(true, 30);
         $this->SetMargins(30, 35, 30);
         $this->SetY(35);
     }
