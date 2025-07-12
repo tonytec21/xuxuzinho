@@ -228,7 +228,14 @@ include 'includes/header.php';
                 <td><?= htmlspecialchars($b['categoria_nome']) ?></td>
                 <td><?= htmlspecialchars($b['modelo']) ?></td>
                 <td><?= $b['quantidade'] ?></td>
-                <td><?= htmlspecialchars($b['localizacao']) ?></td>
+                <td>
+                  <?php
+                    $loc = htmlspecialchars($b['localizacao']);
+                    echo mb_strlen($loc) > 30
+                        ? mb_substr($loc, 0, 30) . '…'
+                        : $loc;
+                  ?>
+                </td>
                 <td><?= $b['data_aquisicao'] ? date('d/m/Y', strtotime($b['data_aquisicao'])) : '–' ?></td>
                 <td class="d-flex gap-1">
                   <button class="btn btn-sm btn-outline-secondary btn-visualizar"
@@ -410,9 +417,16 @@ include 'includes/header.php';
 <script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>  
 
 <script>
+function decodeEntities(encoded) {
+  const txt = document.createElement('textarea');
+  txt.innerHTML = encoded;
+  return txt.value;
+}
+
 feather.replace();
 
 $(document).ready(function(){
+  // Inicializa o DataTable
   $('#tabelaBens').DataTable({
     responsive: true,
     language: {
@@ -445,55 +459,56 @@ $(document).ready(function(){
     });
   }).trigger('change');
 
-  // Visualizar
-  $('.btn-visualizar').on('click', function(){
-    const btn = $(this);
-    $('#view-tipo').text(btn.data('tipo'));
-    $('#view-categoria').text(btn.data('categoria'));
-    $('#view-modelo').text(btn.data('modelo'));
-    $('#view-configuracao').text(btn.data('configuracao'));
-    $('#view-quantidade').text(btn.data('quantidade'));
-    $('#view-localizacao').text(btn.data('localizacao'));
-    $('#view-dataaqu').text(
-      btn.data('dataaqu')
-        ? new Date(btn.data('dataaqu')).toLocaleDateString('pt-BR')
-        : '–'
-    );
-    $('#view-observacoes').text(btn.data('observacoes'));
-    $('#view-cadastro').text(btn.data('cadastro'));
-    $('#visualizarBemModal').modal('show');
-  });
+  // Delegated events para funcionar em todas as páginas do DataTable
+  $('#tabelaBens')
+    .on('click', '.btn-visualizar', function(){
+      const btn = $(this);
+      $('#view-tipo').text(decodeEntities(btn.data('tipo')));
+      $('#view-categoria').text(decodeEntities(btn.data('categoria')));
+      $('#view-modelo').text(decodeEntities(btn.data('modelo')));
+      $('#view-configuracao').text(decodeEntities(btn.data('configuracao')));
+      $('#view-quantidade').text(btn.data('quantidade'));
+      $('#view-localizacao').text(decodeEntities(btn.data('localizacao')));
+      $('#view-dataaqu').text(
+        btn.data('dataaqu')
+          ? new Date(btn.data('dataaqu')).toLocaleDateString('pt-BR')
+          : '–'
+      );
+      $('#view-observacoes').text(decodeEntities(btn.data('observacoes')));
+      $('#view-cadastro').text(decodeEntities(btn.data('cadastro')));
+      $('#visualizarBemModal').modal('show');
+    })
+    .on('click', '.btn-editar', function(){
+      const btn  = $(this),
+            form = $('#formEditarBem');
 
-  // Editar
-  $('.btn-editar').on('click', function(){
-    const btn = $(this), form = $('#formEditarBem');
-    $('#edit-id').val(btn.data('id'));
-    form.find('[name="tipo_id"]').val(btn.data('tipo')).trigger('change');
-    form.find('[name="categoria_id"]').val(btn.data('categoria'));
-    form.find('[name="modelo"]').val(btn.data('modelo'));
-    form.find('[name="configuracao"]').val(btn.data('configuracao'));
-    form.find('[name="quantidade"]').val(btn.data('quantidade'));
-    form.find('[name="localizacao"]').val(btn.data('localizacao'));
-    form.find('[name="data_aquisicao"]').val(btn.data('dataaqu'));
-    form.find('[name="observacoes"]').val(btn.data('observacoes'));
-    $('#editarBemModal').modal('show');
-  });
+      $('#edit-id').val(btn.data('id'));
+      form.find('[name="tipo_id"]').val(btn.data('tipo')).trigger('change');
+      form.find('[name="categoria_id"]').val(btn.data('categoria'));
+      form.find('[name="modelo"]').val(decodeEntities(btn.data('modelo')));
+      form.find('[name="configuracao"]').val(decodeEntities(btn.data('configuracao')));
+      form.find('[name="quantidade"]').val(btn.data('quantidade'));
+      form.find('[name="localizacao"]').val(decodeEntities(btn.data('localizacao')));
+      form.find('[name="data_aquisicao"]').val(btn.data('dataaqu'));
+      form.find('[name="observacoes"]').val(decodeEntities(btn.data('observacoes')));
+      $('#editarBemModal').modal('show');
+    })
+    .on('click', '.btn-excluir', function(){
+      const id     = $(this).data('id'),
+            modelo = decodeEntities($(this).data('modelo'));
 
-  // Excluir
-  $('.btn-excluir').on('click', function(){
-    const id = $(this).data('id'),
-          modelo = $(this).data('modelo');
-    Swal.fire({
-      title: 'Excluir bem?',
-      text: `Deseja realmente excluir "${modelo}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sim, excluir'  
-    }).then(r => {
-      if (r.isConfirmed) {
-        window.location.href = `excluir_bem.php?id=${id}`;
-      }
+      Swal.fire({
+        title: 'Excluir bem?',
+        text: `Deseja realmente excluir "${modelo}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, excluir'
+      }).then(r => {
+        if (r.isConfirmed) {
+          window.location.href = `excluir_bem.php?id=${id}`;
+        }
+      });
     });
-  });
 });
 </script>
+
