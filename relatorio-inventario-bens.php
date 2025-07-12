@@ -1,13 +1,12 @@
 <?php
 // session_check.php: verifica se o usuário está logado
-include(__DIR__ . '/session_check.php');
+require_once 'includes/auth_check.php';
+require_once 'includes/db_connection.php';
+require_once 'includes/functions.php';
 checkSession();
 
 // Inclui a biblioteca TCPDF
 require_once __DIR__ . '/tcpdf/tcpdf.php';
-
-// Conexão com o banco (ajuste o caminho conforme sua estrutura)
-require_once __DIR__ . '/includes/db_connection.php';
 
 // Seta o fuso horário
 date_default_timezone_set('America/Sao_Paulo');
