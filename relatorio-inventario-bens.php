@@ -212,7 +212,7 @@ foreach ($tipos as $tipo){
                 nl2br( dash( safeText($b['configuracao']), 59) ),
                 dash( (string)$b['quantidade']      ,  5),
                 dash( safeText($b['localizacao'])   , 22),
-                dash( $b['aq']                      , 18)
+                dash( $b['aq']                      , 17)
             ];
         }, $bens);
 
