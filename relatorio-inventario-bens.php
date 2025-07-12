@@ -220,8 +220,8 @@ foreach ($tipos as $tipo){
             '',     
             ['MODELO','CONFIGURAÇÃO','QTD','LOCALIZAÇÃO'],
             $rows,
-            ['MODELO'=>'26%','CONFIGURAÇÃO'=>'40%','QTD'=>'6%',
-             'LOCALIZAÇÃO'=>'28%']
+            ['MODELO'=>'26%','CONFIGURAÇÃO'=>'38%','QTD'=>'6%',
+             'LOCALIZAÇÃO'=>'30%']
         );
     }
 }
