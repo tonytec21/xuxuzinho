@@ -95,9 +95,9 @@ class PDFInventario extends TCPDF
         if (file_exists($logo)) {
             $this->Image($logo, 0, 0, 210, 297, 'PNG');
         }
-        /* conteúdo começa 40 mm abaixo do topo */
+
         $this->SetAutoPageBreak(true, 25);
-        $this->SetMargins(25, 40, 25);
+        $this->SetMargins(25, 35, 25);
         $this->SetY(35);
     }
 
