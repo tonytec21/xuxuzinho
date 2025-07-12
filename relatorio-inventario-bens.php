@@ -20,12 +20,23 @@ date_default_timezone_set('America/Sao_Paulo');
 /* ------------------------------------------------------------------ */
 function safeText(string $str): string
 {
-    // 1) converte &quot; &apos; &#39; etc. para seus caracteres
     $decoded = html_entity_decode($str, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-    // 2) escapa apenas &, < e >   (deixa aspas “vivas”)
     return htmlspecialchars($decoded, ENT_NOQUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
+
+/* NOVO ➜ devolve uma linha de “-” proporcional ao tamanho da célula -------------- */
+function dash(string|null $value, int $len = 15): string
+{
+    $trim = trim((string)$value);
+
+    // se o campo está vazio, devolve uma string de hífens do tamanho especificado
+    if ($trim === '' || $trim === '–') {
+        return str_repeat('-', $len);
+    }
+
+    return $trim;   // caso contrário devolve o conteúdo normal
+}
+
 
 /* ------------------------------------------------------------------ */
 /* BUSCA DE DADOS (cards, hierarquia)                                 */
@@ -176,7 +187,7 @@ foreach ($tipos as $tipo){
 
         $bensStmt = $pdo->prepare("
             SELECT modelo,
-                   IFNULL(configuracao,'–'),
+                   configuracao,
                    quantidade,
                    localizacao,
                    IFNULL(DATE_FORMAT(data_aquisicao,'%d/%m/%Y'),'–') AS aq
@@ -196,13 +207,14 @@ foreach ($tipos as $tipo){
 
         $rows = array_map(static function($b){
             return [
-                safeText($b['modelo']),
-                nl2br(safeText($b['configuracao'])),
-                $b['quantidade'],
-                safeText($b['localizacao']),
-                $b['aq']
+                dash(safeText($b['modelo'])),
+                nl2br(dash(safeText($b['configuracao']))),
+                dash((string)$b['quantidade']),
+                dash(safeText($b['localizacao'])),
+                dash($b['aq'])
             ];
         }, $bens);
+
 
         renderTable(
             $pdf,
