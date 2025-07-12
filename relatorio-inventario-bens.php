@@ -211,18 +211,17 @@ foreach ($tipos as $tipo){
                 dash( safeText($b['modelo'])        , 28),   
                 nl2br( dash( safeText($b['configuracao']), 59) ),
                 dash( (string)$b['quantidade']      ,  5),
-                dash( safeText($b['localizacao'])   , 22),
-                dash( $b['aq']                      , 17)
+                dash( safeText($b['localizacao'])   , 22)
             ];
         }, $bens);
 
         renderTable(
             $pdf,
             '',     
-            ['MODELO','CONFIGURAÇÃO','QTD','LOCALIZAÇÃO','AQUISIÇÃO'],
+            ['MODELO','CONFIGURAÇÃO','QTD','LOCALIZAÇÃO'],
             $rows,
-            ['MODELO'=>'26%','CONFIGURAÇÃO'=>'34%','QTD'=>'6%',
-             'LOCALIZAÇÃO'=>'23%','AQUISIÇÃO'=>'11%']
+            ['MODELO'=>'26%','CONFIGURAÇÃO'=>'40%','QTD'=>'6%',
+             'LOCALIZAÇÃO'=>'28%']
         );
     }
 }
