@@ -114,7 +114,7 @@ function renderTable(
 ){
     if (!$dataRows) return;
 
-    $pdf->SetFont('helvetica','B',11);
+    $pdf->SetFont('helvetica','B',10);
     $pdf->Cell(0,8,mb_strtoupper($title,'UTF-8'),0,1,'L');
     $pdf->SetFont('helvetica','',9);
 
@@ -160,8 +160,8 @@ $pdf->Ln(1);
 
 /* ----------- DETALHAMENTO ---------------------------------------- */
 foreach ($tipos as $tipo){
-    $pdf->SetFont('helvetica','B',14);
-    $pdf->Cell(0,8,'TIPO: '.safeText($tipo['nome']),0,1,'L');
+    $pdf->SetFont('helvetica','B',13);
+    $pdf->Cell(0,8,'Tipo: '.safeText($tipo['nome']),0,1,'L');
     $pdf->Ln(2);
 
     $catStmt = $pdo->prepare("
@@ -190,8 +190,8 @@ foreach ($tipos as $tipo){
         $bens = $bensStmt->fetchAll(PDO::FETCH_ASSOC);
         if (!$bens) continue;
 
-        $pdf->SetFont('helvetica','B',12);
-        $pdf->Cell(0,6,'  CATEGORIA: '.safeText($cat['nome']),0,1,'L');
+        $pdf->SetFont('helvetica','B',11);
+        $pdf->Cell(0,6,'  Categoria: '.safeText($cat['nome']),0,1,'L');
         $pdf->Ln(-6);
 
         $rows = array_map(static function($b){
@@ -209,7 +209,7 @@ foreach ($tipos as $tipo){
             '',     
             ['MODELO','CONFIGURAÇÃO','QTD','LOCALIZAÇÃO','AQUISIÇÃO'],
             $rows,
-            ['MODELO'=>'28%','CONFIGURAÇÃO'=>'32%','QTD'=>'6%',
+            ['MODELO'=>'26%','CONFIGURAÇÃO'=>'34%','QTD'=>'6%',
              'LOCALIZAÇÃO'=>'20%','AQUISIÇÃO'=>'14%']
         );
     }
