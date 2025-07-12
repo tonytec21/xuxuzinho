@@ -33,7 +33,7 @@ class PDFInventario extends TCPDF
         $this->Cell(
             0, 10,
             'Página ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(),
-            0, false, 'L', 0, '', 0, false, 'T', 'M'
+            0, false, 'R', 0, '', 0, false, 'T', 'M'
         );
     }
 }
