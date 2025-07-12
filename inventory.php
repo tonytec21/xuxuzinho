@@ -72,6 +72,13 @@ if (isset($_GET['success'])) {
 // Buscar todos os tipos e categorias
 $tipos      = $pdo->query("SELECT * FROM tipos_bem ORDER BY nome")->fetchAll();
 $categorias = $pdo->query("SELECT * FROM categorias_bem ORDER BY nome")->fetchAll();
+$mapCategorias = [];
+foreach ($categorias as $c) {
+    $mapCategorias[$c['tipo_id']][] = [
+        'id'   => $c['id'],
+        'nome' => $c['nome']
+    ];
+}
 
 // Contagens para cards
 $total_bens = $pdo
@@ -420,7 +427,7 @@ include 'includes/header.php';
 <script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>  
 
 <script>
-function decodeEntities(encoded) {
+function decodeEntities(encoded){
   const txt = document.createElement('textarea');
   txt.innerHTML = encoded;
   return txt.value;
@@ -428,43 +435,81 @@ function decodeEntities(encoded) {
 
 feather.replace();
 
-$(document).ready(function(){
-  // Inicializa o DataTable
+$(document).ready(function () {
+
+  /* ----------------------------------------------------------- */
+  /* 1.  DataTable                                               */
+  /* ----------------------------------------------------------- */
   $('#tabelaBens').DataTable({
     responsive: true,
-    language: {
-      lengthMenu: "Mostrar _MENU_ registros por página",
+    language  : {
+      lengthMenu : "Mostrar _MENU_ registros por página",
       zeroRecords: "Nenhum registro encontrado",
-      info: "Mostrando _START_ até _END_ de _TOTAL_ registros",
-      infoEmpty: "Mostrando 0 até 0 de 0 registros",
+      info       : "Mostrando _START_ até _END_ de _TOTAL_ registros",
+      infoEmpty  : "Mostrando 0 até 0 de 0 registros",
       infoFiltered: "(filtrado de _MAX_ registros)",
       loadingRecords: "Carregando...",
-      processing: "Processando...",
-      search: "Pesquisar:",
-      paginate: {
-        first:    "Primeiro",
+      processing : "Processando...",
+      search     : "Pesquisar:",
+      paginate   : {
+        first   : "Primeiro",
         previous: "Anterior",
-        next:     "Próximo",
-        last:     "Último"
+        next    : "Próximo",
+        last    : "Último"
       },
       aria: {
-        sortAscending:  ": ativar para ordenar coluna de forma ascendente",
+        sortAscending : ": ativar para ordenar coluna de forma ascendente",
         sortDescending: ": ativar para ordenar coluna de forma descendente"
       }
     }
   });
 
-  // Filtrar categorias conforme tipo selecionado
-  $('#filtroTipo').on('change', function(){
+  /* ----------------------------------------------------------- */
+  /* 2.  Filtro global da listagem                               */
+  /* ----------------------------------------------------------- */
+  $('#filtroTipo').on('change', function () {
     const tipo = this.value;
-    $('#filtroCategoria option').each(function(){
+    $('#filtroCategoria option').each(function () {
       $(this).toggle(!tipo || $(this).data('tipo') == tipo);
     });
   }).trigger('change');
 
-  // Delegated events para funcionar em todas as páginas do DataTable
+  /* ----------------------------------------------------------- */
+  /* 3.  Helper p/ popular categorias dentro dos formulários     */
+  /* ----------------------------------------------------------- */
+  // Todas as opções de categoria vêm do select de filtros (já possui data-tipo)
+  const allCatOptions = $('#filtroCategoria option').clone();
+
+  function fillCategorias($form, tipoId) {
+    const $catSel = $form.find('.sel-categoria');
+    $catSel.empty().append('<option value="">— Selecione —</option>');
+
+    allCatOptions.each(function () {
+      const $opt = $(this).clone();
+      if (!$opt.val()) return;               // pula placeholder
+      if (!tipoId || $opt.data('tipo') == tipoId) {
+        $catSel.append($opt);
+      }
+    });
+  }
+
+  /* quando abre modal “Novo” já garante o estado inicial */
+  $('#novoBemModal').on('shown.bs.modal', function () {
+    fillCategorias($(this), $(this).find('.sel-tipo').val());
+  });
+
+  /* listener para qualquer select de tipo dentro dos modais */
+  $(document).on('change', '.sel-tipo', function () {
+    const $form = $(this).closest('form');
+    fillCategorias($form, $(this).val());
+  });
+
+  /* ----------------------------------------------------------- */
+  /* 4.  Clique - Visualizar / Editar / Excluir                  */
+  /* ----------------------------------------------------------- */
   $('#tabelaBens')
-    .on('click', '.btn-visualizar', function(){
+    /* -------- visualizar ---------- */
+    .on('click', '.btn-visualizar', function () {
       const btn = $(this);
       $('#view-tipo').text(decodeEntities(btn.data('tipo')));
       $('#view-categoria').text(decodeEntities(btn.data('categoria')));
@@ -481,29 +526,38 @@ $(document).ready(function(){
       $('#view-cadastro').text(decodeEntities(btn.data('cadastro')));
       $('#visualizarBemModal').modal('show');
     })
-    .on('click', '.btn-editar', function(){
+
+    /* -------- editar ------------- */
+    .on('click', '.btn-editar', function () {
       const btn  = $(this),
             form = $('#formEditarBem');
 
       $('#edit-id').val(btn.data('id'));
-      form.find('[name="tipo_id"]').val(btn.data('tipo')).trigger('change');
-      form.find('[name="categoria_id"]').val(btn.data('categoria'));
+
+      /* popular tipo e, logo em seguida, categorias compatíveis */
+      form.find('.sel-tipo').val(btn.data('tipo')).trigger('change');
+      fillCategorias(form, btn.data('tipo'));                // garante lista
+      form.find('.sel-categoria').val(btn.data('categoria')); // seleciona
+
       form.find('[name="modelo"]').val(decodeEntities(btn.data('modelo')));
       form.find('[name="configuracao"]').val(decodeEntities(btn.data('configuracao')));
       form.find('[name="quantidade"]').val(btn.data('quantidade'));
       form.find('[name="localizacao"]').val(decodeEntities(btn.data('localizacao')));
       form.find('[name="data_aquisicao"]').val(btn.data('dataaqu'));
       form.find('[name="observacoes"]').val(decodeEntities(btn.data('observacoes')));
+
       $('#editarBemModal').modal('show');
     })
-    .on('click', '.btn-excluir', function(){
+
+    /* -------- excluir ------------ */
+    .on('click', '.btn-excluir', function () {
       const id     = $(this).data('id'),
             modelo = decodeEntities($(this).data('modelo'));
 
       Swal.fire({
         title: 'Excluir bem?',
-        text: `Deseja realmente excluir "${modelo}"?`,
-        icon: 'warning',
+        text : `Deseja realmente excluir "${modelo}"?`,
+        icon : 'warning',
         showCancelButton: true,
         confirmButtonText: 'Sim, excluir'
       }).then(r => {
@@ -514,4 +568,5 @@ $(document).ready(function(){
     });
 });
 </script>
+
 
