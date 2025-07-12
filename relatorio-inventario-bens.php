@@ -15,7 +15,7 @@ class PDFInventario extends TCPDF
     // Cabeçalho com timbrado
     public function Header()
     {
-        $img = __DIR__ . '../atlas/style/img/timbrado.png';
+        $img = __DIR__ . '/../atlas/style/img/timbrado.png';
         $this->SetAutoPageBreak(false, 0);
         $this->SetMargins(0, 0, 0);
         if (file_exists($img)) {
