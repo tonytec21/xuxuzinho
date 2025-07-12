@@ -84,9 +84,9 @@ class PDFInventario extends TCPDF
             $this->Image($logo, 0, 0, 210, 297, 'PNG');
         }
 
-        $this->SetAutoPageBreak(true, 30);
+        $this->SetAutoPageBreak(true, 25);
         $this->SetMargins(30, 35, 30);
-        $this->SetY(35);
+        $this->SetY(30);
     }
 
     public function Footer()
@@ -197,7 +197,7 @@ foreach ($tipos as $tipo){
         $rows = array_map(static function($b){
             return [
                 dash( safeText($b['modelo'])        , 28),   
-                nl2br( dash( safeText($b['configuracao']), 59) ),
+                nl2br( dash( safeText($b['configuracao']), 64) ),
                 dash( (string)$b['quantidade']      ,  5),
                 dash( safeText($b['localizacao'])   , 22)
             ];
