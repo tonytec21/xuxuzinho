@@ -97,7 +97,7 @@ class PDFInventario extends TCPDF
         }
 
         $this->SetAutoPageBreak(true, 25);
-        $this->SetMargins(25, 35, 25);
+        $this->SetMargins(30, 35, 30);
         $this->SetY(35);
     }
 
