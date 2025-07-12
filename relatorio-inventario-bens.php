@@ -84,7 +84,7 @@ class PDFInventario extends TCPDF
             $this->Image($logo, 0, 0, 210, 297, 'PNG');
         }
 
-        $this->SetAutoPageBreak(true, 25);
+        $this->SetAutoPageBreak(true, 20);
         $this->SetMargins(30, 35, 30);
         $this->SetY(20);
     }
