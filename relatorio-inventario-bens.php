@@ -23,7 +23,7 @@ class PDFInventario extends TCPDF
         // Restaura margens, começa 50 mm abaixo
         $this->SetAutoPageBreak(true, 20);
         $this->SetMargins(15, 30, 15);
-        $this->SetY(60);
+        $this->SetY(80);
     }
 
     public function Footer()
