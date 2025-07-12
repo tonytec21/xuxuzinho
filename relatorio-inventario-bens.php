@@ -163,8 +163,8 @@ $pdf->AddPage();
 
 /* título */
 $pdf->SetFont('helvetica','B',14);
-$pdf->Cell(0,10,'RELATÓRIO DE INVENTÁRIO DE BENS',0,1,'C');
-$pdf->Ln(1);
+$pdf->Cell(0,10,'INVENTÁRIO DE BENS',0,1,'C');
+$pdf->Ln(-2);
 $pdf->SetFont('helvetica','',11);
 $pdf->Cell(0,8,'Gerado em: '.date('d/m/Y H:i'),0,1,'C');
 $pdf->Ln(1);
@@ -174,7 +174,7 @@ foreach ($tipos as $tipo){
     $pdf->Ln(5);
     $pdf->SetFont('helvetica','B',13);
     $pdf->Cell(0,8,'Tipo: '.safeText($tipo['nome']),0,1,'L');
-    $pdf->Ln(1);
+    $pdf->Ln(0);
 
     $catStmt = $pdo->prepare("
         SELECT id,nome
