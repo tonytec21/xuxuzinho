@@ -176,7 +176,7 @@ foreach ($tipos as $tipo){
 
         $bensStmt = $pdo->prepare("
             SELECT modelo,
-                   configuracao,
+                   IFNULL(configuracao,'–'),
                    quantidade,
                    localizacao,
                    IFNULL(DATE_FORMAT(data_aquisicao,'%d/%m/%Y'),'–') AS aq
