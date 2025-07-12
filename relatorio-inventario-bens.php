@@ -41,7 +41,7 @@ function renderTable(TCPDF $pdf, string $title, array $headers, array $rows, arr
 {
     if (empty($rows)) return;
     // título da tabela
-    $pdf->SetFont('helvetica','B',12);
+    $pdf->SetFont('helvetica','B',11);
     $pdf->Cell(0,8, mb_strtoupper($title,'UTF-8'), 0,1,'L');
     // monta HTML
     $pdf->SetFont('helvetica','',10);
@@ -101,10 +101,10 @@ $pdf->SetMargins(15,80,15);
 $pdf->AddPage();
 
 // título principal
-$pdf->SetFont('helvetica','B',16);
+$pdf->SetFont('helvetica','B',14);
 $pdf->Cell(0,0,'RELATÓRIO DE INVENTÁRIO DE BENS',0,1,'C');
 $pdf->Ln(4);
-$pdf->SetFont('helvetica','',10);
+$pdf->SetFont('helvetica','',9);
 $pdf->Cell(0,0,"Data/hora: $dataHora",0,1,'R');
 $pdf->Ln(6);
 
@@ -140,7 +140,7 @@ $pdf->writeHTML($html,true,false,true,false,'');
 // 4) para cada tipo e categoria
 foreach ($tipos as $tipo) {
     // cabeçalho do tipo
-    $pdf->SetFont('helvetica','B',12);
+    $pdf->SetFont('helvetica','B',11);
     $pdf->SetTextColor(0,0,64);
     $pdf->Cell(0,8,'Tipo: '.$tipo['nome'],0,1,'L');
     $pdf->SetTextColor(0,0,0);
@@ -158,7 +158,7 @@ foreach ($tipos as $tipo) {
 
     foreach ($categorias as $cat) {
         // cabeçalho da categoria
-        $pdf->SetFont('helvetica','B',11);
+        $pdf->SetFont('helvetica','B',10);
         $pdf->Cell(0,6,'  Categoria: '.$cat['nome'],0,1,'L');
         $pdf->Ln(2);
 
