@@ -45,12 +45,13 @@ $dataHora = date('d/m/Y H:i');
 
 // Cria o PDF
 $pdf = new PDFInventario('P', 'mm', 'A4', true, 'UTF-8', false);
-$pdf->SetCreator('Seu Sistema');
+$pdf->SetCreator('BCLOUD');
 $pdf->SetAuthor($_SESSION['usuario_nome']);
 $pdf->SetTitle('Relatório de Inventário de Bens');
 $pdf->SetSubject('Inventário');
 $pdf->SetMargins(15, 30, 15);
 $pdf->AddPage();
+$pdf->Ln(5);
 $pdf->SetFont('helvetica', 'B', 14);
 $pdf->Cell(0, 0, 'RELATÓRIO DE INVENTÁRIO DE BENS', 0, 1, 'C');
 $pdf->Ln(5);
