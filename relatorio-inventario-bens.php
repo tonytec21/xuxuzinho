@@ -18,7 +18,7 @@ class PDFInventario extends TCPDF
         if (file_exists($image)) {
             $this->Image($image, 0, 0, 210, 297, 'PNG', '', '', false, 300);
         }
-        // daqui pra baixo o conteúdo começa em Y = 80 mm
+        // Conteúdo começa 80 mm abaixo
         $this->SetAutoPageBreak(true, 20);
         $this->SetMargins(15, 80, 15);
         $this->SetY(80);
@@ -33,7 +33,7 @@ class PDFInventario extends TCPDF
     }
 }
 
-// 1) buscar quantidade total por tipo
+// 1) Quantidade total por tipo
 $typeCounts = $pdo
   ->query("
     SELECT t.nome, COALESCE(SUM(b.quantidade),0) AS qtde
@@ -46,14 +46,14 @@ $typeCounts = $pdo
   ")
   ->fetchAll(PDO::FETCH_ASSOC);
 
-// 2) buscar lista de tipos e categorias para montar as tabelas
+// 2) Lista de tipos para as tabelas
 $tipos = $pdo
   ->query("SELECT id,nome FROM tipos_bem ORDER BY nome")
   ->fetchAll(PDO::FETCH_ASSOC);
 
 $dataHora = date('d/m/Y H:i');
 
-// instanciar PDF
+// Instancia o PDF
 $pdf = new PDFInventario('P','mm','A4',true,'UTF-8',false);
 $pdf->SetCreator('BCLOUD');
 $pdf->SetAuthor($_SESSION['usuario_nome']);
@@ -62,7 +62,7 @@ $pdf->SetSubject('Inventário');
 $pdf->SetMargins(15,80,15);
 $pdf->AddPage();
 
-// título principal
+// Título principal
 $pdf->SetFont('helvetica','B',16);
 $pdf->Cell(0,0,'RELATÓRIO DE INVENTÁRIO DE BENS',0,1,'C');
 $pdf->Ln(4);
@@ -70,13 +70,13 @@ $pdf->SetFont('helvetica','',10);
 $pdf->Cell(0,0,"Data/hora: $dataHora",0,1,'R');
 $pdf->Ln(6);
 
-// 3) renderizar cards com as quantidades
+// 3) Cards com as quantidades
 $html = '<table cellpadding="5" cellspacing="5" border="0" width="100%"><tr>';
 $col = 0;
 foreach ($typeCounts as $tc) {
     $nome = htmlspecialchars($tc['nome']);
     $qtde = $tc['qtde'];
-    $cor  = '#007bff';  // você pode variar a cor por tipo se desejar
+    $cor  = '#007bff';
 
     if ($col && $col % 3 === 0) {
         $html .= '</tr><tr>';
@@ -103,16 +103,16 @@ $html .= '</tr></table><br>';
 
 $pdf->writeHTML($html, true, false, true, false, '');
 
-// 4) para cada tipo e suas categorias, montar tabelas HTML
+// 4) Tabelas por tipo e categoria
 foreach ($tipos as $tipo) {
-    // cabeçalho do tipo
+    // Cabeçalho do tipo
     $pdf->SetFont('helvetica','B',12);
     $pdf->SetTextColor(0,0,64);
     $pdf->Cell(0,8,'Tipo: '.$tipo['nome'],0,1,'L');
     $pdf->SetTextColor(0,0,0);
     $pdf->Ln(2);
 
-    // buscar categorias
+    // Busca categorias
     $stmtCat = $pdo->prepare("
         SELECT id,nome
           FROM categorias_bem
@@ -123,34 +123,34 @@ foreach ($tipos as $tipo) {
     $categorias = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($categorias as $cat) {
-        // cabeçalho da categoria
+        // Cabeçalho da categoria
         $pdf->SetFont('helvetica','B',11);
         $pdf->Cell(0,6,'  Categoria: '.$cat['nome'],0,1,'L');
         $pdf->Ln(2);
 
-        // buscar bens
+        // Busca bens
         $stmtBem = $pdo->prepare("
-            SELECT modelo,configuracao,quantidade,localizacao,data_aquisicao
+            SELECT modelo, configuracao, quantidade, localizacao, data_aquisicao
               FROM bens
-             WHERE tipo_id = ? 
+             WHERE tipo_id = ?
                AND categoria_id = ?
                AND status = 'ativo'
              ORDER BY modelo
         ");
-        $stmtBem->execute([$tipo['id'],$cat['id']]);
+        $stmtBem->execute([$tipo['id'], $cat['id']]);
         $bens = $stmtBem->fetchAll(PDO::FETCH_ASSOC);
         if (empty($bens)) continue;
 
-        // montar HTML da tabela
+        // Monta HTML da tabela
         $html = '
         <table border="1" cellpadding="4" cellspacing="0"
                style="table-layout:fixed;width:100%;">
           <colgroup>
-            <col style="width:30%;"><!-- modelo -->
-            <col style="width:30%;"><!-- config -->
-            <col style="width:10%;"><!-- qtd -->
-            <col style="width:20%;"><!-- loc -->
-            <col style="width:10%;"><!-- data -->
+            <col style="width:30%;"><!-- Modelo -->
+            <col style="width:30%;"><!-- Configuração -->
+            <col style="width:10%;"><!-- Qtd -->
+            <col style="width:20%;"><!-- Localização -->
+            <col style="width:10%;"><!-- Aquisição -->
           </colgroup>
           <thead style="background-color:#E6E6E6;">
             <tr>
@@ -183,7 +183,7 @@ foreach ($tipos as $tipo) {
           </tbody>
         </table><br>';
 
-        // imprime
+        // Imprime tabela
         $pdf->SetFont('helvetica','',10);
         $pdf->writeHTML($html,true,false,true,false,'');
     }
@@ -191,5 +191,5 @@ foreach ($tipos as $tipo) {
     $pdf->Ln(4);
 }
 
-// saída
+// Saída final
 $pdf->Output('Relatorio_Inventario_Bens.pdf','I');
