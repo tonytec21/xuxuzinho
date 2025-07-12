@@ -23,7 +23,7 @@ class PDFInventario extends TCPDF
         // Restaura margens, começa 50 mm abaixo
         $this->SetAutoPageBreak(true, 20);
         $this->SetMargins(15, 30, 15);
-        $this->SetY(50);
+        $this->SetY(60);
     }
 
     public function Footer()
@@ -33,7 +33,7 @@ class PDFInventario extends TCPDF
         $this->Cell(
             0, 10,
             'Página ' . $this->getAliasNumPage() . '/' . $this->getAliasNbPages(),
-            0, false, 'C', 0, '', 0, false, 'T', 'M'
+            0, false, 'L', 0, '', 0, false, 'T', 'M'
         );
     }
 }
