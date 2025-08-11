@@ -353,7 +353,7 @@ include 'includes/header.php';
           
           <div class="col-md-6 col-lg-3">  
             <label class="form-label">Data Inicial</label>  
-            <input type="date" name="fim" value="<?= $periodo_fim ?>" class="form-control">
+            <input type="date" name="ini" value="<?= htmlspecialchars($periodo_ini_input) ?>" class="form-control">
           </div>  
           
           <div class="col-md-6 col-lg-3">  
