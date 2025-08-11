@@ -92,14 +92,16 @@ $filtro_folha  = trim($_GET['folha']  ?? '');
 $filtro_termo  = trim($_GET['termo']  ?? '');  
 $filtro_codigo = trim($_GET['codigo'] ?? '');  
 $filtro_tipo   = $_GET['tipo'] ?? '';  
-$filtro_status = $_GET['status'] ?? 'pendente'; // Por padrão, apenas pendentes  
-$periodo_ini   = $_GET['ini'] ?? date('Y-m-01');  
-$periodo_fim   = $_GET['fim'] ?? date('Y-m-d');  
+$filtro_status = $_GET['status'] ?? 'pendente';   
+$periodo_ini_input = trim($_GET['ini'] ?? '');
+$periodo_fim       = $_GET['fim'] ?? date('Y-m-d');
 
-// Se houver filtros ativos (exceto status), permitir busca em todos os status  
+$periodo_ini_query = ($periodo_ini_input !== '') ? $periodo_ini_input : date('Y-m-01');
+
+// Se houver filtros ativos (exceto status), permitir busca em todos os status
 $tem_filtros = !empty($filtro_nome) || !empty($filtro_livro) || !empty($filtro_folha) ||   
                !empty($filtro_termo) || !empty($filtro_codigo) || !empty($filtro_tipo) ||  
-               $periodo_ini != date('Y-m-01') || $periodo_fim != date('Y-m-d');  
+               ($periodo_ini_input !== '') || ($periodo_fim != date('Y-m-d'));
 
 $where  = ['c.id > 0'];  
 $params = [];  
@@ -125,9 +127,9 @@ if ($filtro_termo)  { $where[] = 'c.termo = ?';             $params[] = $filtro_
 if ($filtro_codigo) { $where[] = 'c.codigo_crc = ?';        $params[] = $filtro_codigo;    }  
 if ($filtro_tipo)   { $where[] = 'c.tipo = ?';              $params[] = $filtro_tipo;      }  
 
-$where[] = 'c.data_registro BETWEEN ? AND ?';  
-$params[] = $periodo_ini;  
-$params[] = $periodo_fim;  
+$where[] = 'c.data_registro BETWEEN ? AND ?';
+$params[] = $periodo_ini_query;
+$params[] = $periodo_fim;
 
 /* ------------------------------------------------------------------  
    2. CONSULTA  
@@ -215,10 +217,9 @@ include 'includes/header.php';
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#uploadPDFModal">  
           <i data-feather="upload" class="me-1" style="width:16px;height:16px;"></i> PDF + OCR  
         </button>  
-
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoComModal">  
+        <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoComModal">  
           <i data-feather="plus" class="me-1" style="width:16px;height:16px;"></i> Nova Comunicação  
-        </button>  
+        </button>   -->
       </div>  
     </div>  
   </div>  
@@ -336,7 +337,7 @@ include 'includes/header.php';
           
           <div class="col-md-6 col-lg-3">  
             <label class="form-label">Data Inicial</label>  
-            <input type="date" name="ini" value="<?= $periodo_ini ?>" class="form-control">  
+            <input type="date" name="ini" value="<?= htmlspecialchars($periodo_ini_input) ?>" class="form-control">
           </div>  
           
           <div class="col-md-6 col-lg-3">  
@@ -921,25 +922,54 @@ function formatarTextoAnotacaoHTML(texto, codigoCRC, cartorio, cidadeEstado, dat
 }  
 
 // Função para copiar texto da anotação  
-function copiarTextoAnotacao() {  
-  // Gerar texto simples (sem HTML) para copiar  
-  const textoSimples = gerarTextoAnotacao(comunicacaoAtual, false);  
-  
-  navigator.clipboard.writeText(textoSimples).then(() => {  
-    const toast = Swal.mixin({  
-      toast: true,  
-      position: 'top-end',  
-      showConfirmButton: false,  
-      timer: 2000,  
-      timerProgressBar: true  
-    });  
-    
-    toast.fire({  
-      icon: 'success',  
-      title: 'Texto copiado para a área de transferência!'  
-    });  
-  });  
-}  
+function copiarTextoAnotacao() {
+  const textoSimples = gerarTextoAnotacao(comunicacaoAtual, false);
+
+  const showToast = (icon, title) => {
+    const toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true
+    });
+    toast.fire({ icon, title });
+  };
+
+  // HTTPS/localhost: usa Clipboard API
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(textoSimples)
+      .then(() => showToast('success', 'Texto copiado para a área de transferência!'))
+      .catch(() => fallbackCopy(textoSimples));
+    return;
+  }
+
+  // Rede interna sem HTTPS: fallback com textarea + execCommand
+  fallbackCopy(textoSimples);
+
+  function fallbackCopy(texto) {
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+
+    if (ok) {
+      showToast('success', 'Texto copiado!');
+    } else {
+      showToast('error', 'Não foi possível copiar o texto neste navegador.');
+    }
+  }
+}
 
 // Função para atualizar preview da etiqueta  
 function atualizarPreviewEtiqueta() {  
