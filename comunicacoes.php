@@ -93,15 +93,19 @@ $filtro_termo  = trim($_GET['termo']  ?? '');
 $filtro_codigo = trim($_GET['codigo'] ?? '');  
 $filtro_tipo   = $_GET['tipo'] ?? '';  
 $filtro_status = $_GET['status'] ?? 'pendente';   
-$periodo_ini_input = trim($_GET['ini'] ?? '');
-$periodo_fim       = $_GET['fim'] ?? date('Y-m-d');
 
-$periodo_ini_query = ($periodo_ini_input !== '') ? $periodo_ini_input : date('Y-m-01');
+// Datas: inicial vazia na UI; final preenchida na UI, mas só filtra se o usuário enviar
+$periodo_ini_input = trim($_GET['ini'] ?? '');
+$periodo_fim       = $_GET['fim'] ?? date('Y-m-d');      // para exibir no input
+$periodo_fim_input = isset($_GET['fim']) ? trim($_GET['fim']) : '';
+
+// O filtro de data só é considerado quando o usuário de fato enviar algum dos campos
+$tem_filtro_data = ($periodo_ini_input !== '' || $periodo_fim_input !== '');
 
 // Se houver filtros ativos (exceto status), permitir busca em todos os status
 $tem_filtros = !empty($filtro_nome) || !empty($filtro_livro) || !empty($filtro_folha) ||   
                !empty($filtro_termo) || !empty($filtro_codigo) || !empty($filtro_tipo) ||  
-               ($periodo_ini_input !== '') || ($periodo_fim != date('Y-m-d'));
+               $tem_filtro_data;
 
 $where  = ['c.id > 0'];  
 $params = [];  
@@ -127,9 +131,21 @@ if ($filtro_termo)  { $where[] = 'c.termo = ?';             $params[] = $filtro_
 if ($filtro_codigo) { $where[] = 'c.codigo_crc = ?';        $params[] = $filtro_codigo;    }  
 if ($filtro_tipo)   { $where[] = 'c.tipo = ?';              $params[] = $filtro_tipo;      }  
 
-$where[] = 'c.data_registro BETWEEN ? AND ?';
-$params[] = $periodo_ini_query;
-$params[] = $periodo_fim;
+// Só aplica filtro de data se o usuário tiver enviado algum dos campos
+if ($tem_filtro_data) {
+    if ($periodo_ini_input !== '' && $periodo_fim_input !== '') {
+        $where[] = 'c.data_registro BETWEEN ? AND ?';
+        $params[] = $periodo_ini_input;
+        $params[] = $periodo_fim_input;
+    } elseif ($periodo_ini_input !== '') {
+        $where[] = 'c.data_registro >= ?';
+        $params[] = $periodo_ini_input;
+    } elseif ($periodo_fim_input !== '') {
+        $where[] = 'c.data_registro <= ?';
+        $params[] = $periodo_fim_input;
+    }
+}
+
 
 /* ------------------------------------------------------------------  
    2. CONSULTA  
@@ -337,7 +353,7 @@ include 'includes/header.php';
           
           <div class="col-md-6 col-lg-3">  
             <label class="form-label">Data Inicial</label>  
-            <input type="date" name="ini" value="<?= htmlspecialchars($periodo_ini_input) ?>" class="form-control">
+            <input type="date" name="fim" value="<?= $periodo_fim ?>" class="form-control">
           </div>  
           
           <div class="col-md-6 col-lg-3">  
