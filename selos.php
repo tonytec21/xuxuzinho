@@ -519,7 +519,6 @@ table.dataTable tbody td{
                                     <i data-feather="search" style="width:16px;height:16px;"></i>
                                 </button>
                             </div>
-                            <div class="form-text">No desktop, a busca também filtra a tabela em tempo real.</div>
                         </div>
                     </form>
                 </div>  
