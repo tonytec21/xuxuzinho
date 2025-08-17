@@ -4,13 +4,20 @@ require_once 'includes/auth_check.php';
 require_once 'includes/db_connection.php';  
 require_once 'includes/functions.php';  
 
-$usuario_id = $_SESSION['usuario_id'];  
 $mensagem = '';  
 $sucesso = false;  
-$modo_edicao = false;  
-// Filtro de status e busca por número  
+
+/* ------------------------------------------------------------------
+   0. Variáveis de sessão
+------------------------------------------------------------------*/
+$usuario_id   = $_SESSION['usuario_id'] ?? 0;
+$usuario_nome = $_SESSION['nome']       ?? 'Usuário';
+
+/* ------------------------------------------------------------------
+   1. Filtros (status / número)
+------------------------------------------------------------------*/
 $filtro_status = $_GET['status'] ?? 'pendentes';  
-$filtro_numero = $_GET['numero'] ?? '';  
+$filtro_numero = trim($_GET['numero'] ?? '');  
 
 $condicoes = ["s.status = 'ativo'"];  
 $parametros = [];  
@@ -21,13 +28,16 @@ if ($filtro_status === 'pendentes') {
     $condicoes[] = "s.enviado_portal = 'sim'";  
 } elseif ($filtro_status === 'sem_anexos') {  
     $condicoes[] = "NOT EXISTS (SELECT 1 FROM anexos a WHERE a.selo_id = s.id AND a.status = 'ativo')";  
-}  
+} // 'todos' não adiciona condição extra além de status=ativo
 
-if (!empty($filtro_numero)) {  
+if ($filtro_numero !== '') {  
     $condicoes[] = "s.numero LIKE ?";  
     $parametros[] = "%$filtro_numero%";  
 }
 
+/* ------------------------------------------------------------------
+   2. Consulta lista de selos
+------------------------------------------------------------------*/
 $sql = "
     SELECT s.*, 
         COUNT(DISTINCT a.id) AS total_anexos,
@@ -38,22 +48,12 @@ $sql = "
     GROUP BY s.id
     ORDER BY s.data_cadastro DESC
 ";
-
 $stmt = $pdo->prepare($sql);
 $stmt->execute($parametros);
 $selos = $stmt->fetchAll();
 
-$selo_atual = null;  
-
-// Verificar se está em modo de edição (pelo ID do selo)  
 /* ------------------------------------------------------------------
-   0. Variáveis de sessão
-------------------------------------------------------------------*/
-$usuario_id   = $_SESSION['usuario_id'] ?? 0;
-$usuario_nome = $_SESSION['nome']       ?? 'Usuário';
-
-/* ------------------------------------------------------------------
-   1. Detectar modo edição e buscar registro + anexos
+   3. Modo de edição (detalhes de um selo + anexos)
 ------------------------------------------------------------------*/
 $modo_edicao = false;
 $prevSeloId  = null; 
@@ -64,7 +64,7 @@ $anexos      = [];
 if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $selo_id = (int) $_GET['id'];
 
-    /* ---------- 1.1  Selo atual ---------------------------------*/
+    // 3.1 - Selo atual
     $stmt = $pdo->prepare("
         SELECT s.*, u.nome AS nome_usuario
         FROM selos s
@@ -75,34 +75,29 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
     $selo_atual = $stmt->fetch();
 
     if ($selo_atual) {
-        /* ---------- 1.2  Selo anterior --------------------------- */
+        // 3.2 - Selo anterior
         $stmt = $pdo->prepare("
-            SELECT id
-            FROM selos
+            SELECT id FROM selos
             WHERE id < ? AND status = 'ativo'
-            ORDER BY id DESC
-            LIMIT 1
+            ORDER BY id DESC LIMIT 1
         ");
         $stmt->execute([$selo_id]);
         $prevSeloId = $stmt->fetchColumn() ?: null;
 
-        /* ---------- 1.3  Próximo selo ---------------------------- */
+        // 3.3 - Próximo selo
         $stmt = $pdo->prepare("
-            SELECT id
-            FROM selos
+            SELECT id FROM selos
             WHERE id > ? AND status = 'ativo'
-            ORDER BY id ASC
-            LIMIT 1
+            ORDER BY id ASC LIMIT 1
         ");
         $stmt->execute([$selo_id]);
         $nextSeloId = $stmt->fetchColumn() ?: null;
 
         $modo_edicao = true;
 
-        /* ---------- 1.4  Anexos deste selo ----------------------- */
+        // 3.4 - Anexos
         $stmt = $pdo->prepare("
-            SELECT *
-            FROM anexos
+            SELECT * FROM anexos
             WHERE selo_id = ? AND status = 'ativo'
             ORDER BY data_upload DESC
         ");
@@ -115,19 +110,95 @@ if (isset($_GET['id']) && is_numeric($_GET['id'])) {
 include 'includes/header.php';  
 ?>    
 
+<style>
+/* ====== Ajustes de UI/UX e responsividade (cards no mobile) ====== */
+@media (max-width: 767.98px){
+  .desktop-only { display: none !important; }
+}
+@media (min-width: 768px){
+  .mobile-only  { display: none !important; }
+}
+
+/* Cards da lista (mobile) */
+.selo-card{
+  background: var(--card, #fff);
+  border: 1px solid rgba(0,0,0,.06);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 6px 24px rgba(0,0,0,.05);
+}
+.selo-card .title{
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text, #111827);
+}
+.selo-card .meta{
+  font-size: .9rem;
+  color: var(--muted, #64748b);
+}
+.badge-pill{
+  border-radius: 999px;
+  padding: .35rem .6rem;
+  font-weight: 600;
+  font-size: .75rem;
+}
+.selo-card .actions .btn{
+  border-radius: .75rem;
+}
+
+/* Dropzone highlight */
+.dropzone-container.highlight{
+  outline: 2px dashed #2563eb;
+  outline-offset: 6px;
+  background: rgba(37,99,235,.05);
+}
+
+/* Copy tooltip */
+.copy-button{
+  background: transparent;
+  border: 0;
+  padding: .25rem .5rem;
+  margin-right: .25rem;
+  cursor: pointer;
+}
+.copy-button .copy-tooltip{
+  position: absolute;
+  top: -28px;
+  right: 8px;
+  background: #111827;
+  color: #fff;
+  padding: .2rem .5rem;
+  border-radius: .4rem;
+  font-size: .75rem;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: .2s;
+  pointer-events: none;
+}
+.copy-button.copied .copy-tooltip{
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Tabela: manter espaçamento elegante no desktop */
+table.dataTable tbody td{
+  vertical-align: middle;
+}
+</style>
+
 <div class="container-fluid py-4">  
     <div class="row mb-4">  
-        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center">  
-            <div class="mb-3 mb-md-0">  
-                <h1 class="fw-bold text-gray-800">  
-                    <i data-feather="bookmark" class="me-2 text-primary"></i>  
-                    <?= $modo_edicao ? 'Gerenciar Selo' : 'Selos Eletrônicos' ?>  
-                </h1>  
-                <p class="text-muted lead fs-6">  
-                    <?= $modo_edicao ? 'Adicione documentos ao selo selecionado' : 'Cadastre e gerencie seus selos eletrônicos' ?>  
-                </p>  
-            </div>  
-            <div class="d-flex gap-2">  
+        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2">  
+            <div>
+                <h1 class="fw-bold text-gray-800 mb-1">
+                    <i data-feather="bookmark" class="me-2 text-primary"></i>
+                    <?= $modo_edicao ? 'Gerenciar Selo' : 'Selos Eletrônicos' ?>
+                </h1>
+                <p class="text-muted lead fs-6 mb-0">
+                    <?= $modo_edicao ? 'Adicione documentos ao selo selecionado' : 'Cadastre e gerencie seus selos eletrônicos' ?>
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2">  
                 <?php if ($modo_edicao): ?>  
                     <div class="btn-group" role="group">  
                         <?php if (!empty($prevSeloId)): ?>  
@@ -155,7 +226,6 @@ include 'includes/header.php';
                 <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importarSelosModal">
                     <i data-feather="upload" class="me-1" style="width:16px;height:16px;"></i> Importar XLSX
                 </button>
-
             </div>  
         </div>  
     </div>
@@ -170,10 +240,10 @@ include 'includes/header.php';
         <div class="alert alert-success">Selo cadastrado com sucesso!</div>  
     <?php endif; ?>  
     
+
     <?php if ($modo_edicao && $selo_atual): ?>  
         <!-- =====================  STATUS DO SELO  ===================== -->
         <?php
-        /* ---------- Determina o status do selo ---------- */
         if (count($anexos) == 0) {
             $selo_status_key   = 'sem_anexo';
             $selo_status_label = 'Sem Anexo';
@@ -185,7 +255,6 @@ include 'includes/header.php';
             $selo_status_label = 'Pendente de Envio';
         }
 
-        /* ---------- Mapeia classes, cores e ícones ---------- */
         $statusClass = match($selo_status_key) {
             'pendente'   => 'border-warning text-warning',
             'enviado'    => 'border-success text-success',
@@ -215,7 +284,6 @@ include 'includes/header.php';
                         <i data-feather="<?= $statusIcon ?>" class="text-white" style="width:24px;height:24px;"></i>
                     </div>
                     <div class="text-start">
-                        <!-- <div class="small text-muted">Status do Selo</div> -->
                         <div class="fs-5 fw-bold <?= $statusClass ?>">
                             <?= $selo_status_label ?>
                         </div>
@@ -224,7 +292,7 @@ include 'includes/header.php';
             </div>
         </div>
                 
-        <!-- Modo de edição de selo -->  
+        <!-- ====== Modo de edição de selo ====== -->  
         <div class="row">
             <div class="col-md-4 mb-4">
                 <div class="card border-0 shadow-sm">
@@ -307,7 +375,7 @@ include 'includes/header.php';
                                 
                                 <div class="upload-area mb-3">  
                                     <div class="dropzone-container" id="dropzoneUpload">  
-                                        <div class="dz-message">  
+                                        <div class="dz-message text-center p-3">  
                                             <div class="upload-icon mb-3">  
                                                 <i data-feather="upload-cloud" style="width: 48px; height: 48px; color: #6c757d;"></i>  
                                             </div>  
@@ -345,11 +413,11 @@ include 'includes/header.php';
                         </div>  
                     </div>  
                     
-                    <!-- Lista de anexos -->  
+                    <!-- Lista de anexos (ID exclusivo) -->  
                     <div class="card-body">  
                         <?php if (count($anexos) > 0): ?>  
                             <div class="table-responsive">  
-                                <table id="tabelaSelos" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">  
+                                <table id="tabelaAnexos" class="table table-striped table-bordered dt-responsive nowrap" style="width:100%">  
                                     <thead>  
                                         <tr>  
                                             <th style="width: 50px;"></th>  
@@ -361,7 +429,9 @@ include 'includes/header.php';
                                         </tr>  
                                     </thead>  
                                     <tbody>  
-                                        <?php foreach ($anexos as $anexo): ?>  
+                                        <?php foreach ($anexos as $anexo): 
+                                            $isoUpload = date('Y-m-d H:i:s', strtotime($anexo['data_upload']));
+                                        ?>  
                                             <tr>  
                                                 <td>  
                                                     <?php if (strpos($anexo['tipo'], 'image') !== false): ?>  
@@ -372,22 +442,22 @@ include 'includes/header.php';
                                                 </td>  
                                                 <td><?php echo htmlspecialchars($anexo['nome_arquivo']); ?></td>  
                                                 <td>  
-                                                    <?php  
-                                                    $tipo_exibicao = '';  
-                                                    if ($anexo['tipo'] == 'application/pdf') {  
-                                                        $tipo_exibicao = 'PDF';  
-                                                    } else if (strpos($anexo['tipo'], 'image/jpeg') !== false) {  
-                                                        $tipo_exibicao = 'JPEG';  
-                                                    } else if (strpos($anexo['tipo'], 'image/png') !== false) {  
-                                                        $tipo_exibicao = 'PNG';  
-                                                    } else {  
-                                                        $tipo_exibicao = $anexo['tipo'];  
-                                                    }  
+                                                    <?php
+                                                    $tipo_exibicao = '';
+                                                    if ($anexo['tipo'] == 'application/pdf') {
+                                                        $tipo_exibicao = 'PDF';
+                                                    } else if (strpos($anexo['tipo'], 'image/jpeg') !== false) {
+                                                        $tipo_exibicao = 'JPEG';
+                                                    } else if (strpos($anexo['tipo'], 'image/png') !== false) {
+                                                        $tipo_exibicao = 'PNG';
+                                                    } else {
+                                                        $tipo_exibicao = $anexo['tipo'];
+                                                    }
                                                     echo $tipo_exibicao;  
                                                     ?>  
                                                 </td>  
                                                 <td><?php echo number_format($anexo['tamanho'] / 1024, 2) . ' KB'; ?></td>  
-                                                <td><?php echo date('d/m/Y H:i', strtotime($anexo['data_upload'])); ?></td>  
+                                                <td data-order="<?php echo $isoUpload; ?>"><?php echo date('d/m/Y H:i', strtotime($anexo['data_upload'])); ?></td>  
                                                 <td>  
                                                     <a href="<?php echo $anexo['caminho']; ?>" target="_blank" class="btn btn-sm btn-outline-primary" title="Visualizar">  
                                                         <i data-feather="eye" style="width: 14px; height: 14px;"></i>  
@@ -417,138 +487,205 @@ include 'includes/header.php';
                 </div>  
             </div>  
         </div>  
-        <?php else: ?>  
-            <!-- Lista de selos -->  
-            <div class="card border-0 shadow-sm">  
-                <div class="card-body">  
-                    <?php  
-                    // Código da consulta SQL modificado (como mostrado no item 1)  
-                    
-                    if (count($selos) > 0):  
-                    ?>  
-                    
-                    <!-- Filtros de pesquisa -->  
-                    <div class="card-header bg-white p-3 mb-3">  
-                        <div class="row">  
-                            <div class="col-md-6 mb-2 mb-md-0">  
-                                <div class="btn-group" role="group" aria-label="Filtro de status">  
-                                    <a href="selos.php?status=todos" class="btn btn-outline-secondary <?php echo $filtro_status === 'todos' ? 'active' : ''; ?>">  
-                                        Todos  
-                                    </a>  
-                                    <a href="selos.php?status=enviados" class="btn btn-outline-secondary <?php echo $filtro_status === 'enviados' ? 'active' : ''; ?>">  
-                                        Enviados  
-                                    </a>  
-                                    <a href="selos.php?status=pendentes" class="btn btn-outline-secondary <?php echo $filtro_status === 'pendentes' ? 'active' : ''; ?>">  
-                                        Pendentes  
-                                    </a>  
-                                    <a href="selos.php?status=sem_anexos" class="btn btn-outline-secondary <?php echo $filtro_status === 'sem_anexos' ? 'active' : ''; ?>">
-                                        Sem Anexos
-                                    </a>
-                                </div>  
-                            </div>  
-                            <div class="col-md-6">  
-                                <div class="input-group">  
-                                    <input type="text" id="filtroNumeroSelo" class="form-control" placeholder="Pesquisar por número do selo...">  
-                                    <button class="btn btn-outline-secondary" type="button" id="btnLimparFiltro">  
-                                        <i data-feather="x" style="width: 16px; height: 16px;"></i>  
-                                    </button>  
-                                </div>  
+    <?php else: ?>  
+        <!-- ====== Lista de selos ====== -->  
+        <div class="card border-0 shadow-sm">  
+            <div class="card-body">  
+
+                <?php if (count($selos) > 0): ?>  
+                <!-- Filtros de pesquisa (desktop + mobile) -->  
+                <div class="card-header bg-white p-3 mb-3">  
+                    <form class="row g-2 align-items-center" method="get" action="selos.php">
+                        <div class="col-12 col-md-6">
+                            <div class="btn-group w-100" role="group" aria-label="Filtro de status">  
+                                <?php
+                                // Helper para classe "active"
+                                $is = fn($s) => ($filtro_status === $s) ? 'active' : '';
+                                ?>
+                                <a href="selos.php?status=todos"      class="btn btn-outline-secondary <?= $is('todos'); ?>">Todos</a>  
+                                <a href="selos.php?status=enviados"   class="btn btn-outline-secondary <?= $is('enviados'); ?>">Enviados</a>  
+                                <a href="selos.php?status=pendentes"  class="btn btn-outline-secondary <?= $is('pendentes'); ?>">Pendentes</a>  
+                                <a href="selos.php?status=sem_anexos" class="btn btn-outline-secondary <?= $is('sem_anexos'); ?>">Sem Anexos</a>
                             </div>  
                         </div>  
-                    </div>  
-                    
-                    <div class="table-responsive">
-                        <table id="tabelaSelos" class="table table-striped table-bordered dt-responsive nowrap">
-                            <thead>  
-                                <tr>  
-                                    <th>Número do Selo</th>  
-                                    <th>Data de Cadastro</th>  
-                                    <th>Anexos</th>  
-                                    <th>Downloads</th>  
-                                    <th>Situação</th>  
-                                    <th>Ações</th>  
-                                </tr>  
-                            </thead>  
-                            <tbody>  
-                                <?php foreach ($selos as $selo): ?>  
-                                    <tr>  
-                                        <td><?php echo htmlspecialchars($selo['numero']); ?></td>  
-                                        <td><?php echo date('d/m/Y H:i', strtotime($selo['data_cadastro'])); ?></td>  
-                                        <td>  
-                                            <span class="badge bg-<?php echo ($selo['total_anexos'] > 0) ? 'info' : 'secondary'; ?>">  
-                                                <?php echo $selo['total_anexos']; ?> anexos  
-                                            </span>  
-                                        </td>  
-                                        <td>  
-                                            <span class="badge bg-<?php echo ($selo['total_downloads'] > 0) ? 'success' : 'secondary'; ?>">  
-                                                <?php echo $selo['total_downloads']; ?> download<?php echo $selo['total_downloads'] == 1 ? '' : 's'; ?>  
-                                            </span>  
-                                        </td>  
-                                        <td>  
-                                            <?php if ($selo['total_anexos'] == 0): ?>  
-                                                <span class="badge bg-danger">  
-                                                    <i data-feather="alert-circle" style="width: 14px; height: 14px;" class="me-1"></i>  
-                                                    Sem anexo  
-                                                </span>  
-                                            <?php elseif ($selo['enviado_portal'] === 'sim'): ?>  
-                                                <span class="badge bg-success">  
-                                                    <i data-feather="check-circle" style="width: 14px; height: 14px;" class="me-1"></i>  
-                                                    Enviado ao Portal  
-                                                </span>  
-                                            <?php else: ?>  
-                                                <span class="badge bg-warning text-dark">  
-                                                    <i data-feather="clock" style="width: 14px; height: 14px;" class="me-1"></i>  
-                                                    Pendente de envio  
-                                                </span>  
-                                            <?php endif; ?>  
-                                        </td>  
-                                        <td>  
-                                            <a href="selos.php?id=<?php echo $selo['id']; ?>" class="btn btn-sm btn-outline-primary" title="Gerenciar Selo">  
-                                                <i data-feather="edit" style="width: 16px; height: 16px;"></i>  
-                                            </a>  
-
-                                            <?php if ($selo['total_anexos'] > 0): ?>  
-                                                <a href="baixar_documento.php?id=<?php echo $selo['id']; ?>" class="btn btn-sm btn-outline-success" title="Baixar Documento Comprobatório">  
-                                                    <i data-feather="download" style="width: 16px; height: 16px;"></i>  
-                                                </a>  
-                                            <?php endif; ?>  
-
-                                            <?php if ($selo['enviado_portal'] !== 'sim' && $selo['total_anexos'] > 0): ?>  
-                                                <form method="POST" action="marcar_enviado.php" class="d-inline form-marcar-enviado">  
-                                                    <input type="hidden" name="selo_id" value="<?php echo $selo['id']; ?>">  
-                                                    <button type="submit" class="btn btn-sm btn-outline-info" title="Marcar como Enviado ao Portal do Selo">  
-                                                        <i data-feather="check-circle" style="width: 16px; height: 16px;"></i>  
-                                                    </button>  
-                                                </form>  
-                                            <?php endif; ?>  
-
-                                            <?php if ($selo['enviado_portal'] !== 'sim'): ?>  
-                                                <button type="button" class="btn btn-sm btn-outline-danger excluir-selo"  
-                                                        data-id="<?php echo $selo['id']; ?>"  
-                                                        data-numero="<?php echo htmlspecialchars($selo['numero']); ?>"  
-                                                        title="Excluir Selo">  
-                                                    <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>  
-                                                </button>  
-                                            <?php endif; ?>  
-                                        </td>  
-                                    </tr>  
-                                <?php endforeach; ?>  
-                            </tbody>  
-                        </table>  
-                    </div>  
-                    <?php else: ?>  
-                        <div class="text-center py-4">  
-                            <i data-feather="file-text" style="width: 48px; height: 48px; opacity: 0.2;"></i>  
-                            <p class="mt-2 text-muted">Nenhum resultado.</p>  
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
-                                <i data-feather="plus" class="me-1" style="width: 14px; height: 14px;"></i>    
-                                Cadastrar Novo Selo  
-                            </button>  
-                        </div>  
-                    <?php endif; ?>  
+                        <div class="col-12 col-md-6">
+                            <div class="input-group">
+                                <input type="hidden" name="status" value="<?= htmlspecialchars($filtro_status) ?>">
+                                <input type="text" name="numero" id="filtroNumeroSelo" class="form-control" placeholder="Pesquisar por número do selo..." value="<?= htmlspecialchars($filtro_numero) ?>">
+                                <button class="btn btn-outline-secondary" type="button" id="btnLimparFiltro" title="Limpar">
+                                    <i data-feather="x" style="width: 16px; height: 16px;"></i>
+                                </button>
+                                <button class="btn btn-primary" type="submit" title="Aplicar filtro servidor">
+                                    <i data-feather="search" style="width:16px;height:16px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>  
+                
+                <!-- Desktop (>= md): Tabela -->
+                <div class="table-responsive desktop-only">
+                    <table id="tabelaListaSelos" class="table table-striped table-bordered nowrap w-100">
+                        <thead>  
+                            <tr>  
+                                <th>Número do Selo</th>  
+                                <th>Data de Cadastro</th>  
+                                <th>Anexos</th>  
+                                <th>Downloads</th>  
+                                <th>Situação</th>  
+                                <th>Ações</th>  
+                            </tr>  
+                        </thead>  
+                        <tbody>  
+                            <?php foreach ($selos as $selo): 
+                                $iso = date('Y-m-d H:i:s', strtotime($selo['data_cadastro']));
+                                $temAnexo = ((int)$selo['total_anexos'] > 0);
+                                $foiEnviado = ($selo['enviado_portal'] === 'sim');
+
+                                if (!$temAnexo) {
+                                    $sitBadge = '<span class="badge bg-danger"><i data-feather="alert-circle" class="me-1" style="width:14px;height:14px;"></i>Sem anexo</span>';
+                                } elseif ($foiEnviado) {
+                                    $sitBadge = '<span class="badge bg-success"><i data-feather="check-circle" class="me-1" style="width:14px;height:14px;"></i>Enviado ao Portal</span>';
+                                } else {
+                                    $sitBadge = '<span class="badge bg-warning text-dark"><i data-feather="clock" class="me-1" style="width:14px;height:14px;"></i>Pendente de envio</span>';
+                                }
+                            ?>  
+                                <tr>  
+                                    <td><?php echo htmlspecialchars($selo['numero']); ?></td>  
+                                    <td data-order="<?php echo $iso; ?>"><?php echo date('d/m/Y H:i', strtotime($selo['data_cadastro'])); ?></td>  
+                                    <td>
+                                        <span class="badge bg-<?php echo $temAnexo ? 'info' : 'secondary'; ?>">
+                                            <?php echo (int)$selo['total_anexos']; ?> anexos
+                                        </span>
+                                    </td>  
+                                    <td>
+                                        <span class="badge bg-<?php echo ((int)$selo['total_downloads'] > 0) ? 'success' : 'secondary'; ?>">
+                                            <?php 
+                                            $d = (int)$selo['total_downloads'];
+                                            echo $d . ' download' . ($d === 1 ? '' : 's'); 
+                                            ?>
+                                        </span>
+                                    </td>  
+                                    <td><?php echo $sitBadge; ?></td>  
+                                    <td class="text-nowrap">  
+                                        <a href="selos.php?id=<?php echo $selo['id']; ?>" class="btn btn-sm btn-outline-primary" title="Gerenciar Selo">  
+                                            <i data-feather="edit" style="width: 16px; height: 16px;"></i>  
+                                        </a>  
+
+                                        <?php if ($temAnexo): ?>  
+                                            <a href="baixar_documento.php?id=<?php echo $selo['id']; ?>" class="btn btn-sm btn-outline-success" title="Baixar Documento Comprobatório">  
+                                                <i data-feather="download" style="width: 16px; height: 16px;"></i>  
+                                            </a>  
+                                        <?php endif; ?>  
+
+                                        <?php if (!$foiEnviado && $temAnexo): ?>  
+                                            <form method="POST" action="marcar_enviado.php" class="d-inline form-marcar-enviado">  
+                                                <input type="hidden" name="selo_id" value="<?php echo $selo['id']; ?>">  
+                                                <button type="submit" class="btn btn-sm btn-outline-info" title="Marcar como Enviado ao Portal do Selo">  
+                                                    <i data-feather="check-circle" style="width: 16px; height: 16px;"></i>  
+                                                </button>  
+                                            </form>  
+                                        <?php endif; ?>  
+
+                                        <?php if (!$foiEnviado): ?>  
+                                            <button type="button" class="btn btn-sm btn-outline-danger excluir-selo"  
+                                                    data-id="<?php echo $selo['id']; ?>"  
+                                                    data-numero="<?php echo htmlspecialchars($selo['numero']); ?>"  
+                                                    title="Excluir Selo">  
+                                                <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>  
+                                            </button>  
+                                        <?php endif; ?>  
+                                    </td>  
+                                </tr>  
+                            <?php endforeach; ?>  
+                        </tbody>  
+                    </table>  
+                </div>  
+
+                <!-- Mobile (< md): Cards -->
+                <div id="cardsSelos" class="mobile-only d-flex flex-column gap-3">
+                    <?php foreach ($selos as $selo): 
+                        $temAnexo   = ((int)$selo['total_anexos'] > 0);
+                        $foiEnviado = ($selo['enviado_portal'] === 'sim');
+                        $iso        = date('Y-m-d H:i:s', strtotime($selo['data_cadastro']));
+                        $dataBr     = date('d/m/Y H:i', strtotime($selo['data_cadastro']));
+
+                        $statusCor  = $foiEnviado ? 'success' : ($temAnexo ? 'warning' : 'danger');
+                        $statusTxt  = $foiEnviado ? 'Enviado ao Portal' : ($temAnexo ? 'Pendente de envio' : 'Sem anexo');
+                        $statusIcon = $foiEnviado ? 'check-circle' : ($temAnexo ? 'clock' : 'alert-circle');
+                    ?>
+                    <div class="selo-card" data-numero="<?php echo htmlspecialchars(strtolower($selo['numero'])); ?>" data-order="<?php echo $iso; ?>">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="title"><?php echo htmlspecialchars($selo['numero']); ?></div>
+                                <div class="meta">
+                                    <i data-feather="calendar" class="me-1" style="width:14px;height:14px;"></i>
+                                    <?php echo $dataBr; ?>
+                                </div>
+                            </div>
+                            <span class="badge badge-pill bg-<?php echo $statusCor; ?>">
+                                <i data-feather="<?php echo $statusIcon; ?>" style="width:14px;height:14px;" class="me-1"></i>
+                                <?php echo $statusTxt; ?>
+                            </span>
+                        </div>
+
+                        <div class="mt-2 d-flex flex-wrap gap-2">
+                            <span class="badge bg-<?php echo $temAnexo ? 'info' : 'secondary'; ?>">
+                                <?php echo (int)$selo['total_anexos']; ?> anexos
+                            </span>
+                            <span class="badge bg-<?php echo ((int)$selo['total_downloads'] > 0) ? 'success' : 'secondary'; ?>">
+                                <?php 
+                                $d = (int)$selo['total_downloads'];
+                                echo $d . ' download' . ($d === 1 ? '' : 's'); 
+                                ?>
+                            </span>
+                        </div>
+
+                        <div class="actions mt-3 d-flex flex-wrap gap-2">
+                            <a href="selos.php?id=<?php echo $selo['id']; ?>" class="btn btn-outline-primary btn-sm">
+                                <i data-feather="edit" class="me-1" style="width:16px;height:16px;"></i> Gerenciar
+                            </a>
+
+                            <?php if ($temAnexo): ?>
+                            <a href="baixar_documento.php?id=<?php echo $selo['id']; ?>" class="btn btn-outline-success btn-sm">
+                                <i data-feather="download" class="me-1" style="width:16px;height:16px;"></i> Baixar
+                            </a>
+                            <?php endif; ?>
+
+                            <?php if (!$foiEnviado && $temAnexo): ?>
+                            <form method="POST" action="marcar_enviado.php" class="d-inline form-marcar-enviado">
+                                <input type="hidden" name="selo_id" value="<?php echo $selo['id']; ?>">
+                                <button type="submit" class="btn btn-outline-info btn-sm">
+                                    <i data-feather="check-circle" class="me-1" style="width:16px;height:16px;"></i> Enviar
+                                </button>
+                            </form>
+                            <?php endif; ?>
+
+                            <?php if (!$foiEnviado): ?>
+                            <button type="button" class="btn btn-outline-danger btn-sm excluir-selo" 
+                                    data-id="<?php echo $selo['id']; ?>" 
+                                    data-numero="<?php echo htmlspecialchars($selo['numero']); ?>">
+                                <i data-feather="trash-2" class="me-1" style="width:16px;height:16px;"></i> Excluir
+                            </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <?php else: ?>  
+                    <div class="text-center py-4">  
+                        <i data-feather="file-text" style="width: 48px; height: 48px; opacity: 0.2;"></i>  
+                        <p class="mt-2 text-muted">Nenhum resultado.</p>  
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#novoSeloModal">  
+                            <i data-feather="plus" class="me-1" style="width: 14px; height: 14px;"></i>    
+                            Cadastrar Novo Selo  
+                        </button>  
+                    </div>  
+                <?php endif; ?>  
             </div>  
-        <?php endif; ?>  
+        </div>  
+    <?php endif; ?>  
 </div>  
 
 <!-- Modal para cadastrar novo selo -->  
@@ -616,692 +753,423 @@ include 'includes/header.php';
   </div>
 </div>
 
-
-<!-- jQuery e scripts necessários -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://unpkg.com/feather-icons"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>  
-<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>  
-<script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>  
-<script src="https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js"></script>  
-<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>  
-<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>  
-
+<!-- ===== Bloco Único de Scripts (sem duplicar jQuery) ===== -->
 <script>
-feather.replace();
+/* Utilitários para carregar CSS/JS sob demanda */
+function loadCSS(href){
+  return new Promise((res, rej) => {
+    if ([...document.styleSheets].some(s => s.href && s.href.includes(href))) return res();
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = href;
+    l.onload = () => res(); l.onerror = () => rej(new Error('Falha CSS: '+href));
+    document.head.appendChild(l);
+  });
+}
+function loadScript(src){
+  return new Promise((res, rej) => {
+    if (document.querySelector('script[src="'+src+'"]')) return res();
+    const s = document.createElement('script');
+    s.src = src; s.async = false;
+    s.onload = () => res(); s.onerror = () => rej(new Error('Falha JS: '+src));
+    document.head.appendChild(s);
+  });
+}
 
-document.addEventListener('DOMContentLoaded', function() {  
-    // Função para inicializar o DataTables  
-    function initializeDataTable() {  
-        console.log('Tentando inicializar DataTable...');  
-        
-        // Verificar se a tabela existe  
-        if ($('.table').length === 0) {  
-            console.error('Nenhuma tabela encontrada na página');  
-            return;  
-        }  
-        
-        // Adicionar ID à tabela se necessário  
-        if ($('#tabelaSelos').length === 0) {  
-            $('.table').first().attr('id', 'tabelaSelos');  
-        }  
-        
-        try {  
-            // Inicializar o DataTable com configurações melhoradas  
-            var table = $('#tabelaSelos').DataTable({  
-            responsive: true,  
-            pageLength: 10,  
-            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Todos"]],  
-            language: {  
-                "emptyTable": "Nenhum registro encontrado",  
-                "info": "Mostrando de _START_ até _END_ de _TOTAL_ registros",  
-                "infoEmpty": "Mostrando 0 até 0 de 0 registros",  
-                "infoFiltered": "(Filtrados de _MAX_ registros)",  
-                "infoThousands": ".",  
-                "lengthMenu": "Mostrar _MENU_ registros por página",  
-                "loadingRecords": "Carregando...",  
-                "processing": "Processando...",  
-                "zeroRecords": "Nenhum registro encontrado",  
-                "search": "Pesquisar",  
-                "paginate": {  
-                    "next": "Próximo",  
-                    "previous": "Anterior",  
-                    "first": "Primeiro",  
-                    "last": "Último"  
-                },  
-                "aria": {  
-                    "sortAscending": ": Ordenar colunas de forma ascendente",  
-                    "sortDescending": ": Ordenar colunas de forma descendente"  
-                }  
-            },  
-            dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +  
-                '<"row"<"col-sm-12"tr>>' +  
-                '<"row"<"col-sm-5"i><"col-sm-7"p>>',  
-            columnDefs: [  
-                { orderable: false, targets: -1 }, // Ações  
-                { width: "35%", targets: 0 },      // Número do Selo  
-                { width: "20%", targets: 1 },      // Data de Cadastro  
-                { width: "15%", targets: 2 },      // Anexos  
-                { width: "15%", targets: 3 },      // Downloads  
-                { width: "15%", targets: 4 }       // Ações  
-            ],  
-            order: [[1, 'desc']],  
-            stateSave: true,  
-            drawCallback: function() {  
-                $('#tabelaSelos').removeClass('d-none');  
-                $('#loadingTableMessage').hide();  
-                feather.replace();  
-            },  
-            initComplete: function() {  
-                // Esconder a busca padrão do DataTables para usar nosso filtro personalizado  
-                $('.dataTables_filter').hide();  
-                
-                // Configurar evento de busca personalizada  
-                $('#filtroNumeroSelo').on('keyup', function() {  
-                    table.search(this.value).draw();  
-                });  
-                
-                // Botão para limpar o filtro  
-                $('#btnLimparFiltro').on('click', function() {  
-                    $('#filtroNumeroSelo').val('');  
-                    table.search('').draw();  
-                });  
-            }  
-        });  
+/* ====== Inicializações que dependem de jQuery+DataTables ====== */
+async function initWithjQueryAndDataTables(){
+  // Se não houver jQuery (caso seu footer não carregue), carrega fallback:
+  if (!window.jQuery) {
+    await loadScript('https://code.jquery.com/jquery-3.6.0.min.js');
+  }
+  const $ = window.jQuery;
 
-        // Mostrar/esconder o botão limpar filtro  
-        $('#filtroNumeroSelo').on('input', function() {  
-            if ($(this).val().length > 0) {  
-                $('#btnLimparFiltro').show();  
-            } else {  
-                $('#btnLimparFiltro').hide();  
-            }  
-        });  
+  // CSS do DataTables (para visual elegante com Bootstrap 5)
+  await Promise.all([
+    loadCSS('https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css'),
+    loadCSS('https://cdn.datatables.net/responsive/2.4.1/css/responsive.bootstrap5.min.css'),
+    loadCSS('https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css')
+  ]);
 
-        // Esconder o botão limpar inicialmente  
-        $(document).ready(function() {  
-            $('#btnLimparFiltro').hide();  
-        });
+  // JS do DataTables (depois do jQuery definitivo)
+  await loadScript('https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js');
+  await loadScript('https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js');
+  await loadScript('https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js');
+  await loadScript('https://cdn.datatables.net/responsive/2.4.1/js/responsive.bootstrap5.min.js');
+  await loadScript('https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js');
+  await loadScript('https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js');
 
-        // Mostrar/esconder o botão limpar filtro  
-        $('#filtroNumeroSelo').on('input', function() {  
-            if ($(this).val().length > 0) {  
-                $('#btnLimparFiltro').show();  
-            } else {  
-                $('#btnLimparFiltro').hide();  
-            }  
-        });  
+  if (window.feather) feather.replace();
 
-        // Esconder o botão limpar inicialmente  
-        $(document).ready(function() {  
-            $('#btnLimparFiltro').hide();  
-        });
-            console.log('DataTable inicializado com sucesso');  
-        } catch (e) {  
-            console.error('Erro ao inicializar DataTable:', e);  
-        }  
-    }  
+  // === Tabela de anexos no modo edição ===
+  if ($('#tabelaAnexos').length) {
+    $('#tabelaAnexos').DataTable({
+      responsive: true,
+      pageLength: 10,
+      order: [[4, 'desc']], // coluna "Data" usa data-order ISO
+      language: dtLang()
+    });
+  }
 
-    // Verificar se jQuery e DataTables estão disponíveis  
-    if (typeof jQuery !== 'undefined') {  
-        console.log('jQuery está disponível, versão:', jQuery.fn.jquery);  
-        
-        // Aguardar um pouco para garantir que todos os scripts foram carregados  
-        setTimeout(function() {  
-            if (typeof jQuery.fn.DataTable !== 'undefined') {  
-                console.log('DataTables está disponível, inicializando...');  
-                initializeDataTable();  
-            } else {  
-                console.log('DataTables não disponível, carregando script...');  
-                
-                // Carregar o script do DataTables  
-                var script = document.createElement('script');  
-                script.src = 'https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js';  
-                script.onload = function() {  
-                    console.log('Script do DataTables carregado, inicializando...');  
-                    
-                    // Carregar o script do Bootstrap para DataTables  
-                    var bootstrapScript = document.createElement('script');  
-                    bootstrapScript.src = 'https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js';  
-                    bootstrapScript.onload = initializeDataTable;  
-                    document.head.appendChild(bootstrapScript);  
-                };  
-                document.head.appendChild(script);  
-            }  
-        }, 500);  
-    } else {  
-        console.error('jQuery não está disponível');  
-    }  
-});  
-
-$(document).ready(function () {
-    // Excluir anexo
-    $('.excluir-anexo').click(function () {
-        const id = $(this).data('id');
-        const nome = $(this).data('nome');
-
-        Swal.fire({
-            title: 'Excluir anexo?',
-            text: `Você tem certeza que deseja excluir o anexo "${nome}"?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sim, excluir',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = `excluir_anexo.php?id=${id}`;
-            }
-        });
+  // === Lista (desktop) ===
+  if ($('#tabelaListaSelos').length) {
+    const table = $('#tabelaListaSelos').DataTable({
+      responsive: true,
+      pageLength: 10,
+      lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, "Todos"]],
+      order: [[1, 'desc']], // Data (usa data-order ISO)
+      language: dtLang(),
+      columnDefs: [
+        { orderable: false, targets: -1 } // ações
+      ],
+      initComplete: function(){
+        const inicial = $('#filtroNumeroSelo').val();
+        if (inicial) table.search(inicial).draw();
+      }
     });
 
-    // Excluir selo
-    $('.excluir-selo').click(function () {
-        const id = $(this).data('id');
-        const numero = $(this).data('numero');
-
-        Swal.fire({
-            title: 'Excluir selo?',
-            text: `Você tem certeza que deseja excluir o selo "${numero}"? Todos os anexos relacionados serão excluídos.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Sim, excluir',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = `excluir_selo.php?id=${id}`;
-            }
-        });
+    // Busca em tempo real + sincroniza com cards mobile
+    $('#filtroNumeroSelo').on('keyup input', function(){
+      table.search(this.value).draw();
+      filtrarCards(this.value);
     });
-});
+    $('#btnLimparFiltro').on('click', function(){
+      $('#filtroNumeroSelo').val('');
+      table.search('').draw();
+      filtrarCards('');
+    });
 
-$('.form-marcar-enviado').submit(function(e) {
+    table.on('draw', function(){ if (window.feather) feather.replace(); });
+  } else {
+    // Página sem tabela (ex.: cards/mobile-only)
+    const filtro = document.getElementById('filtroNumeroSelo');
+    const limpar = document.getElementById('btnLimparFiltro');
+    if (filtro) filtro.addEventListener('input', e => filtrarCards(e.target.value));
+    if (limpar) limpar.addEventListener('click', () => { if (filtro) filtro.value=''; filtrarCards(''); });
+  }
+
+  // === Ações comuns (jQuery) ===
+  $(document).on('click', '.excluir-anexo', function(){
+    const id   = $(this).data('id');
+    const nome = $(this).data('nome');
+    Swal.fire({
+      title: 'Excluir anexo?',
+      text: `Você tem certeza que deseja excluir o anexo "${nome}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sim, excluir',
+      cancelButtonText: 'Cancelar'
+    }).then(r => { if (r.isConfirmed) location.href = `excluir_anexo.php?id=${id}`; });
+  });
+
+  $(document).on('click', '.excluir-selo', function(){
+    const id     = $(this).data('id');
+    const numero = $(this).data('numero');
+    Swal.fire({
+      title: 'Excluir selo?',
+      text: `Você tem certeza que deseja excluir o selo "${numero}"? Todos os anexos relacionados serão excluídos.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sim, excluir',
+      cancelButtonText: 'Cancelar'
+    }).then(r => { if (r.isConfirmed) location.href = `excluir_selo.php?id=${id}`; });
+  });
+
+  $(document).on('submit', '.form-marcar-enviado, #formMarcarEnviado', function(e){
     e.preventDefault();
     const form = $(this);
-
     Swal.fire({
-        title: 'Confirmar envio?',
-        text: 'Deseja marcar este documento como enviado ao Portal do Selo?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Sim, marcar como enviado',
-        cancelButtonText: 'Cancelar'
+      title: 'Confirmar envio?',
+      text: 'Deseja marcar este documento como enviado ao Portal do Selo?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, marcar como enviado',
+      cancelButtonText: 'Cancelar'
     }).then((result) => {
-        if (result.isConfirmed) {
-            $.post('marcar_enviado.php', form.serialize(), function(response) {
-                if (response.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Marcado como enviado!',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire('Erro', response.message || 'Não foi possível marcar como enviado.', 'error');
-                }
-            }, 'json').fail(() => {
-                Swal.fire('Erro', 'Falha na comunicação com o servidor.', 'error');
-            });
-        }
+      if (result.isConfirmed) {
+        $.post('marcar_enviado.php', form.serialize(), function(response) {
+          if (response.success) {
+            Swal.fire({ icon:'success', title:'Marcado como enviado!', timer:1500, showConfirmButton:false })
+              .then(() => location.reload());
+          } else {
+            Swal.fire('Erro', response.message || 'Não foi possível marcar como enviado.', 'error');
+          }
+        }, 'json').fail(() => {
+          Swal.fire('Erro', 'Falha na comunicação com o servidor.', 'error');
+        });
+      }
     });
-});
+  });
+}
 
-document.addEventListener('DOMContentLoaded', function() {  
-    // Verificar se estamos na página de edição de selo (com o dropzone)  
-    const dropzone = document.getElementById('dropzoneUpload');  
-    
-    // Só executar o código do dropzone se ele existir na página  
-    if (dropzone) {  
-        const fileInput = document.createElement('input');  
-        fileInput.type = 'file';  
-        fileInput.multiple = true;  
-        fileInput.name = 'arquivos[]';  
-        fileInput.accept = '.pdf,.jpg,.jpeg,.png';  
-        fileInput.style.display = 'none';  
-        fileInput.setAttribute('form', 'uploadForm');  
-        
-        const uploadForm = document.getElementById('uploadForm');  
-        if (uploadForm) {  
-            uploadForm.appendChild(fileInput);  
+// Idioma do DataTables
+function dtLang(){
+  return {
+    "emptyTable": "Nenhum registro encontrado",  
+    "info": "Mostrando de _START_ até _END_ de _TOTAL_ registros",  
+    "infoEmpty": "Mostrando 0 até 0 de 0 registros",  
+    "infoFiltered": "(Filtrados de _MAX_ registros)",  
+    "infoThousands": ".",  
+    "lengthMenu": "Mostrar _MENU_ registros por página",  
+    "loadingRecords": "Carregando...",  
+    "processing": "Processando...",  
+    "zeroRecords": "Nenhum registro encontrado",  
+    "search": "Pesquisar",  
+    "paginate": {  
+        "next": "Próximo",  
+        "previous": "Anterior",  
+        "first": "Primeiro",  
+        "last": "Último"  
+    },  
+    "aria": {  
+        "sortAscending": ": Ordenar colunas de forma ascendente",  
+        "sortDescending": ": Ordenar colunas de forma descendente"  
+    }
+  };
+}
 
-            const browseBtn = document.querySelector('.browse-btn');  
-            const submitBtn = document.getElementById('submitUpload');  
-            const previewContainer = document.getElementById('preview-container');  
-            const previewList = document.getElementById('file-preview-list');  
-            
-            // Evento para o botão de navegação  
-            if (browseBtn) {  
-                browseBtn.addEventListener('click', function() {  
-                    fileInput.click();  
-                });  
-            }  
-            
-            // Eventos de arrastar e soltar  
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {  
-                dropzone.addEventListener(eventName, preventDefaults, false);  
-            });  
-            
-            function preventDefaults(e) {  
-                e.preventDefault();  
-                e.stopPropagation();  
-            }  
-            
-            ['dragenter', 'dragover'].forEach(eventName => {  
-                dropzone.addEventListener(eventName, highlight, false);  
-            });  
-            
-            ['dragleave', 'drop'].forEach(eventName => {  
-                dropzone.addEventListener(eventName, unhighlight, false);  
-            });  
-            
-            function highlight() {  
-                dropzone.classList.add('highlight');  
-            }  
-            
-            function unhighlight() {  
-                dropzone.classList.remove('highlight');  
-            }  
-            
-            // Manipulador de soltar arquivos  
-            dropzone.addEventListener('drop', handleDrop, false);  
-            
-            function handleDrop(e) {  
-                const dt = e.dataTransfer;  
-                const files = dt.files;  
-                handleFiles(files);  
-            }  
-            
-            // Manipulador de seleção de arquivos  
-            fileInput.addEventListener('change', function() {  
-                handleFiles(this.files);  
-            });  
-            
-            function handleFiles(files) {  
-                if (files.length > 0) {  
-                    previewContainer.classList.remove('d-none');  
-                    submitBtn.disabled = false;  
-                    
-                    // Limpar a lista de visualização se necessário  
-                    // previewList.innerHTML = '';  
-                    
-                    Array.from(files).forEach(file => {  
-                        // Verificar tipo de arquivo  
-                        const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];  
-                        if (!validTypes.includes(file.type)) {  
-                            showToast('Tipo de arquivo não suportado: ' + file.name, 'error');  
-                            return;  
-                        }  
-                        
-                        // Verificar tamanho do arquivo (10MB)  
-                        if (file.size > 10 * 1024 * 1024) {  
-                            showToast('Arquivo muito grande: ' + file.name, 'error');  
-                            return;  
-                        }  
-                        
-                        addFilePreview(file);  
-                    });  
-                }  
-            }  
-            
-            function addFilePreview(file) {  
-                const item = document.createElement('div');  
-                item.className = 'file-preview-item';  
-                
-                // Determinar o ícone com base no tipo de arquivo  
-                let iconName = 'file';  
-                if (file.type === 'application/pdf') {  
-                    iconName = 'file-text';  
-                } else if (file.type.startsWith('image/')) {  
-                    iconName = 'image';  
-                }  
-                
-                // Formatar o tamanho do arquivo  
-                const fileSize = formatFileSize(file.size);  
-                
-                item.innerHTML = `  
-                    <div class="file-icon">  
-                        <i data-feather="${iconName}" style="width: 18px; height: 18px;"></i>  
-                    </div>  
-                    <div class="file-info">  
-                        <div class="file-name">${file.name}</div>  
-                        <div class="file-size">${fileSize}</div>  
-                    </div>  
-                    <div class="file-remove" data-filename="${file.name}">  
-                        <i data-feather="x" style="width: 16px; height: 16px;"></i>  
-                    </div>  
-                `;  
-                
-                previewList.appendChild(item);  
-                
-                // Inicializar os ícones Feather  
-                if (typeof feather !== 'undefined') {  
-                    feather.replace({  
-                        'stroke-width': 2,  
-                        'width': 18,  
-                        'height': 18  
-                    });  
-                }  
-                
-                // Adicionar evento para remover o arquivo  
-                const removeBtn = item.querySelector('.file-remove');  
-                removeBtn.addEventListener('click', function() {  
-                    // Remover o arquivo do input  
-                    const newFileList = new DataTransfer();  
-                    Array.from(fileInput.files).forEach(f => {  
-                        if (f.name !== this.dataset.filename) {  
-                            newFileList.items.add(f);  
-                        }  
-                    });  
-                    fileInput.files = newFileList.files;  
-                    
-                    // Remover a visualização  
-                    item.remove();  
-                    
-                    // Verificar se ainda há arquivos  
-                    if (fileInput.files.length === 0) {  
-                        previewContainer.classList.add('d-none');  
-                        submitBtn.disabled = true;  
-                    }  
-                });  
-            }  
-            
-            function formatFileSize(bytes) {  
-                if (bytes === 0) return '0 Bytes';  
-                const k = 1024;  
-                const sizes = ['Bytes', 'KB', 'MB', 'GB'];  
-                const i = Math.floor(Math.log(bytes) / Math.log(k));  
-                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];  
-            }  
-            
-            // Manipulador de envio do formulário  
-            uploadForm.addEventListener('submit', function(e) {  
-                e.preventDefault();  
+/* ====== Código sem jQuery (pode rodar já) ====== */
 
-                if (fileInput.files.length === 0) {  
-                    Swal.fire('Erro', 'Selecione pelo menos um arquivo para enviar.', 'error');  
-                    return;  
-                }  
+// Dropzone simples (apenas quando existir)
+document.addEventListener('DOMContentLoaded', function(){  
+  if (window.feather) feather.replace();
 
-                const progressContainer = document.getElementById('progressContainer');  
-                const progressBar = document.getElementById('progressBar');  
-                const uploadStatus = document.getElementById('uploadStatus');  
+  const dropzone = document.getElementById('dropzoneUpload');  
+  if (!dropzone) return;
 
-                progressContainer.classList.remove('d-none');  
-                submitBtn.disabled = true;  
+  const fileInput        = document.createElement('input');  
+  fileInput.type         = 'file';  
+  fileInput.multiple     = true;  
+  fileInput.name         = 'arquivos[]';  
+  fileInput.accept       = '.pdf,.jpg,.jpeg,.png';  
+  fileInput.style.display= 'none';  
+  fileInput.setAttribute('form','uploadForm');  
 
-                const formData = new FormData(this);  
+  const uploadForm       = document.getElementById('uploadForm');  
+  uploadForm.appendChild(fileInput);  
 
-                const xhr = new XMLHttpRequest();  
-                xhr.open('POST', 'upload_anexo.php', true);  
+  const browseBtn        = document.querySelector('.browse-btn');  
+  const submitBtn        = document.getElementById('submitUpload');  
+  const previewContainer = document.getElementById('preview-container');  
+  const previewList      = document.getElementById('file-preview-list');  
 
-                // Progresso do upload  
-                xhr.upload.addEventListener('progress', function(e) {  
-                    if (e.lengthComputable) {  
-                        const percentComplete = Math.round((e.loaded / e.total) * 100);  
-                        progressBar.style.width = percentComplete + '%';  
-                        progressBar.textContent = percentComplete + '%';  
-                        uploadStatus.textContent = `Enviando arquivos... ${formatFileSize(e.loaded)} de ${formatFileSize(e.total)}`;  
-                    }  
-                });  
+  browseBtn?.addEventListener('click', () => fileInput.click());
 
-                // Resposta do servidor  
-                xhr.onload = function () {  
-                    console.log("Resposta bruta:", xhr.responseText);  
-                    uploadStatus.textContent = 'Upload finalizado';  
+  ['dragenter','dragover','dragleave','drop'].forEach(evt => {
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); e.stopPropagation(); }, false);
+  });
+  ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, () => dropzone.classList.add('highlight'), false));
+  ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, () => dropzone.classList.remove('highlight'), false));
 
-                    if (xhr.status === 200) {  
-                        let response;  
-                        try {  
-                            response = JSON.parse(xhr.responseText);  
-                        } catch (e) {  
-                            console.error('Resposta inválida:', xhr.responseText);  
-                            Swal.fire('Erro', 'Resposta inválida do servidor.', 'error');  
-                            submitBtn.disabled = false;  
-                            return;  
-                        }  
+  dropzone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
+  fileInput.addEventListener('change', function(){ handleFiles(this.files); });
 
-                        if (response.success) {  
-                            Swal.fire({  
-                                icon: 'success',  
-                                title: 'Sucesso!',  
-                                text: response.message || 'Upload realizado com sucesso!',  
-                                timer: 1500,  
-                                showConfirmButton: false  
-                            }).then(() => {  
-                                window.location.reload();  
-                            });  
-                        } else {  
-                            Swal.fire('Erro no Upload', response.message || 'Falha ao enviar arquivos.', 'error');  
-                            submitBtn.disabled = false;  
-                        }  
-                    } else {  
-                        Swal.fire('Erro', 'Falha na comunicação com o servidor. Código: ' + xhr.status, 'error');  
-                        submitBtn.disabled = false;  
-                    }  
-                };  
+  function handleFiles(files){
+    if (!files.length) return;
 
-                // Erro de conexão  
-                xhr.onerror = function() {  
-                    Swal.fire('Erro', 'Falha na conexão com o servidor.', 'error');  
-                    submitBtn.disabled = false;  
-                    uploadStatus.textContent = 'Upload falhou';  
-                };  
+    previewContainer.classList.remove('d-none');
+    submitBtn.disabled = false;
 
-                // Enviar  
-                xhr.send(formData);  
-            });  
-        }  
-    }  
-    
-    // Função para exibir mensagens de toast  
-    function showToast(message, type = 'info') {  
-        // Verificar se o Bootstrap Toast está disponível  
-        if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {  
-            // Criar um elemento toast  
-            const toastEl = document.createElement('div');  
-            toastEl.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} border-0`;  
-            toastEl.setAttribute('role', 'alert');  
-            toastEl.setAttribute('aria-live', 'assertive');  
-            toastEl.setAttribute('aria-atomic', 'true');  
-            
-            toastEl.innerHTML = `  
-                <div class="d-flex">  
-                    <div class="toast-body">  
-                        ${message}  
-                    </div>  
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>  
-                </div>  
-            `;  
-            
-            // Adicionar o toast ao documento  
-            const toastContainer = document.querySelector('.toast-container');  
-            if (!toastContainer) {  
-                const container = document.createElement('div');  
-                container.className = 'toast-container position-fixed top-0 end-0 p-3';  
-                document.body.appendChild(container);  
-                container.appendChild(toastEl);  
-            } else {  
-                toastContainer.appendChild(toastEl);  
-            }  
-            
-            // Inicializar e mostrar o toast  
-            const toast = new bootstrap.Toast(toastEl, { delay: 5000 });  
-            toast.show();  
-            
-            // Remover o toast após o fechamento  
-            toastEl.addEventListener('hidden.bs.toast', function() {  
-                toastEl.remove();  
-            });  
-        } else {  
-            // Fallback para alert se o Bootstrap Toast não estiver disponível  
-            if (type === 'error') {  
-                alert('Erro: ' + message);  
-            } else {  
-                alert(message);  
-            }  
-        }  
-    }  
-});
+    Array.from(files).forEach(file => {
+      const validTypes = ['application/pdf','image/jpeg','image/jpg','image/png'];
+      if (!validTypes.includes(file.type)) { showToast('Tipo de arquivo não suportado: '+file.name,'error'); return; }
+      if (file.size > 10*1024*1024)       { showToast('Arquivo muito grande: '+file.name,'error'); return; }
+      addFilePreview(file);
+    });
+  }
 
-$('#formMarcarEnviado').submit(function(e) {
+  function addFilePreview(file){
+    const item = document.createElement('div');
+    item.className = 'file-preview-item d-flex align-items-center gap-2 border rounded p-2 mb-2';
+
+    let iconName = file.type === 'application/pdf' ? 'file-text' : (file.type.startsWith('image/') ? 'image' : 'file');
+    const fileSize = formatFileSize(file.size);
+
+    item.innerHTML = `
+      <div class="file-icon"><i data-feather="${iconName}" style="width:18px;height:18px;"></i></div>
+      <div class="file-info flex-fill">
+        <div class="file-name fw-semibold">${file.name}</div>
+        <div class="file-size small text-muted">${fileSize}</div>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-secondary file-remove" data-filename="${file.name}">
+        <i data-feather="x" style="width:16px;height:16px;"></i>
+      </button>
+    `;
+    previewList.appendChild(item);
+    if (window.feather) feather.replace();
+
+    item.querySelector('.file-remove').addEventListener('click', function(){
+      const newList = new DataTransfer();
+      Array.from(fileInput.files).forEach(f => { if (f.name !== this.dataset.filename) newList.items.add(f); });
+      fileInput.files = newList.files;
+      item.remove();
+      if (fileInput.files.length === 0){
+        previewContainer.classList.add('d-none');
+        submitBtn.disabled = true;
+      }
+    });
+  }
+
+  function formatFileSize(bytes){
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;  
+    const sizes = ['Bytes','KB','MB','GB'];  
+    const i = Math.floor(Math.log(bytes)/Math.log(k));  
+    return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
+  }
+
+  uploadForm.addEventListener('submit', function(e){
     e.preventDefault();
-    const form = $(this);
 
-    Swal.fire({
-        title: 'Confirmar envio?',
-        text: 'Deseja marcar este documento como enviado ao Portal do Selo?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Sim, marcar como enviado',
-        cancelButtonText: 'Cancelar'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $.post('marcar_enviado.php', form.serialize(), function(response) {
-                if (response.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Marcado como enviado!',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire('Erro', response.message, 'error');
-                }
-            }, 'json').fail(() => {
-                Swal.fire('Erro', 'Erro na comunicação com o servidor.', 'error');
-            });
-        }
+    if (fileInput.files.length === 0) {
+      Swal.fire('Erro', 'Selecione pelo menos um arquivo para enviar.', 'error');
+      return;
+    }
+
+    const progressContainer = document.getElementById('progressContainer');  
+    const progressBar       = document.getElementById('progressBar');  
+    const uploadStatus      = document.getElementById('uploadStatus');  
+
+    progressContainer.classList.remove('d-none');  
+    submitBtn.disabled = true;  
+
+    const formData = new FormData(this);  
+    const xhr = new XMLHttpRequest();  
+    xhr.open('POST', 'upload_anexo.php', true);  
+
+    xhr.upload.addEventListener('progress', function(e){
+      if (e.lengthComputable){
+        const pct = Math.round((e.loaded / e.total) * 100);
+        progressBar.style.width = pct + '%';
+        progressBar.textContent = pct + '%';
+        uploadStatus.textContent = `Enviando arquivos... ${formatFileSize(e.loaded)} de ${formatFileSize(e.total)}`;
+      }
     });
+
+    xhr.onload = function(){
+      uploadStatus.textContent = 'Upload finalizado';
+      if (xhr.status === 200){
+        let response;
+        try { response = JSON.parse(xhr.responseText); }
+        catch(e){
+          console.error('Resposta inválida:', xhr.responseText);
+          Swal.fire('Erro', 'Resposta inválida do servidor.', 'error');
+          submitBtn.disabled = false;
+          return;
+        }
+
+        if (response.success){
+          Swal.fire({ icon:'success', title:'Sucesso!', text: response.message || 'Upload realizado com sucesso!', timer:1500, showConfirmButton:false })
+              .then(() => { window.location.reload(); });
+        } else {
+          Swal.fire('Erro no Upload', response.message || 'Falha ao enviar arquivos.', 'error');
+          submitBtn.disabled = false;
+        }
+      } else {
+        Swal.fire('Erro', 'Falha na comunicação com o servidor. Código: ' + xhr.status, 'error');
+        submitBtn.disabled = false;
+      }
+    };
+
+    xhr.onerror = function(){
+      Swal.fire('Erro', 'Falha na conexão com o servidor.', 'error');
+      submitBtn.disabled = false;
+      uploadStatus.textContent = 'Upload falhou';
+    };
+
+    xhr.send(formData);
+  });
 });
 
-</script>  
+/* Toast helper */
+function showToast(message, type = 'info') {  
+  if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {  
+    const toastEl = document.createElement('div');  
+    toastEl.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} border-0`;  
+    toastEl.setAttribute('role','alert');  
+    toastEl.setAttribute('aria-live','assertive');  
+    toastEl.setAttribute('aria-atomic','true');  
+    toastEl.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+    `;
+    let container = document.querySelector('.toast-container');
+    if (!container){
+      container = document.createElement('div');
+      container.className = 'toast-container position-fixed top-0 end-0 p-3';
+      document.body.appendChild(container);
+    }
+    container.appendChild(toastEl);
+    const toast = new bootstrap.Toast(toastEl, { delay: 5000 });  
+    toast.show();  
+    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());  
+  } else {  
+    if (type === 'error') alert('Erro: ' + message);
+    else alert(message);
+  }  
+}
 
-<script>  
-document.addEventListener('DOMContentLoaded', function() {  
-    // Inicializa os ícones Feather (se necessário)  
-    if (typeof feather !== 'undefined') {  
-        feather.replace();  
-    }  
-    
-    // Seleciona todos os botões de cópia  
-    const copyButtons = document.querySelectorAll('.copy-button');  
-    
-    // Adiciona evento de clique a cada botão  
-    copyButtons.forEach(button => {  
-        button.addEventListener('click', function() {  
-            // Obtém o texto a ser copiado  
-            const textToCopy = this.getAttribute('data-clipboard-text');  
-            
-            // Usa a API moderna de Clipboard quando disponível  
-            if (navigator.clipboard && navigator.clipboard.writeText) {  
-                navigator.clipboard.writeText(textToCopy)  
-                    .then(() => showCopiedFeedback(this))  
-                    .catch(err => console.error('Erro ao copiar: ', err));  
-            } else {  
-                // Fallback para método mais antigo  
-                const tempInput = document.createElement('input');  
-                tempInput.value = textToCopy;  
-                document.body.appendChild(tempInput);  
-                tempInput.select();  
-                document.execCommand('copy');  
-                document.body.removeChild(tempInput);  
-                
-                showCopiedFeedback(this);  
-            }  
-        });  
+/* Cópia do número do selo (sem jQuery) */
+document.addEventListener('DOMContentLoaded', function(){  
+  const copyButtons = document.querySelectorAll('.copy-button');  
+  copyButtons.forEach(button => {  
+    button.addEventListener('click', function(){  
+      const textToCopy = this.getAttribute('data-clipboard-text');  
+      if (navigator.clipboard && navigator.clipboard.writeText) {  
+        navigator.clipboard.writeText(textToCopy)
+          .then(() => showCopiedFeedback(this))
+          .catch(err => console.error('Erro ao copiar: ', err));  
+      } else {
+        const tempInput = document.createElement('input');  
+        tempInput.value = textToCopy;  
+        document.body.appendChild(tempInput);  
+        tempInput.select();  
+        document.execCommand('copy');  
+        document.body.removeChild(tempInput);  
+        showCopiedFeedback(this);  
+      }  
     });  
-    
-    // Função para mostrar feedback visual de cópia  
-    function showCopiedFeedback(button) {  
-        // Adiciona a classe para mostrar o tooltip  
-        button.classList.add('copied');  
-        
-        // Altera o ícone para check se estiver usando o Feather  
-        const iconElement = button.querySelector('[data-feather]');  
-        if (iconElement && typeof feather !== 'undefined') {  
-            // Salva o ícone original  
-            const originalIcon = iconElement.getAttribute('data-feather');  
-            
-            // Muda para ícone de check  
-            iconElement.setAttribute('data-feather', 'check');  
-            feather.replace();  
-            
-            // Restaura após 2 segundos  
-            setTimeout(() => {  
-                iconElement.setAttribute('data-feather', originalIcon);  
-                feather.replace();  
-                button.classList.remove('copied');  
-            }, 2000);  
-        } else {  
-            // Se não estiver usando Feather, apenas remove a classe após 2 segundos  
-            setTimeout(() => {  
-                button.classList.remove('copied');  
-            }, 2000);  
-        }  
-    }  
-});  
-</script>
+  });  
 
-<script>
-document.getElementById('formImportarSelos').addEventListener('submit', async function (e) {
-    e.preventDefault();
-
-    const form   = this;
-    const fileEl = form.querySelector('input[type="file"][name="xlsx_file"]');
-    if (!fileEl.files.length) {
-        Swal.fire('Atenção', 'Selecione um arquivo XLSX.', 'warning');
-        return;
+  function showCopiedFeedback(button){
+    button.classList.add('copied');
+    const iconElement = button.querySelector('[data-feather]');
+    if (iconElement && window.feather){
+      const originalIcon = iconElement.getAttribute('data-feather');
+      iconElement.setAttribute('data-feather', 'check');
+      feather.replace();
+      setTimeout(() => {
+        iconElement.setAttribute('data-feather', originalIcon);
+        feather.replace();
+        button.classList.remove('copied');
+      }, 2000);
+    } else {
+      setTimeout(() => button.classList.remove('copied'), 2000);
     }
-    if (fileEl.files[0].size > 10 * 1024 * 1024) {               // 10 MB
-        Swal.fire('Atenção', 'Arquivo maior que 10 MB.', 'warning');
-        return;
-    }
+  }
+});
 
-    const fd = new FormData(form);
-    Swal.fire({
-        title: 'Importando…',
-        html: 'Aguarde enquanto processamos o arquivo.',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-    });
+/* Filtro para Cards (mobile) */
+function filtrarCards(texto){
+  const query = (texto || '').toLowerCase();
+  document.querySelectorAll('#cardsSelos .selo-card').forEach(card => {
+    const numero = card.getAttribute('data-numero') || '';
+    card.style.display = numero.includes(query) ? '' : 'none';
+  });
+}
 
-    try {
-        const resp = await fetch('importar_selos.php', {
-            method: 'POST',
-            body:   fd,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-
-        const raw = await resp.text();           // lemos como texto primeiro
-        let data;                                // tentaremos converter p/ JSON
-        try {
-            data = JSON.parse(raw);
-        } catch (e) {
-            throw new Error(`Resposta não-JSON (${resp.status}):\n` + raw);
-        }
-
-        if (!resp.ok || !data.success) {
-            throw new Error(data.message || `Falha (HTTP ${resp.status}).`);
-        }
-
-        Swal.fire('Sucesso!', data.message, 'success')
-            .then(() => location.reload());
-
-    } catch (err) {
-        Swal.close();
-        Swal.fire('Erro', err.message || 'Não foi possível enviar o arquivo.', 'error');
-    }
+/* Garante que DataTables carregue só após jQuery final da página */
+window.addEventListener('load', function(){ 
+  initWithjQueryAndDataTables().catch(err => {
+    console.error(err);
+    showToast('Falha ao carregar DataTables. Verifique a conexão de rede ou CSP.', 'error');
+  });
 });
 </script>
-
 
 <?php include 'includes/footer.php'; ?>   
