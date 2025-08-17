@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         goto output_json;  
     }  
 
-    $selo_id = $_POST['selo_id'];  
+    $selo_id = (int)$_POST['selo_id'];  
 
     $stmt = $pdo->prepare("SELECT id FROM selos WHERE id = ?");
     $stmt->execute([$selo_id]);
@@ -92,29 +92,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         goto output_json;
     }
 
-    // Verificar se o upload é múltiplo ou único  
-    $is_multiple = isset($_FILES['arquivos']) && is_array($_FILES['arquivos']['name']);  
+    // --------- Normaliza $_FILES para um array plano ($files) ----------
+    $files = [];
 
-    if ($is_multiple) {  
-        if (empty($_FILES['arquivos']['name'][0])) {  
-            $response['message'] = 'Nenhum arquivo foi enviado.';  
-            goto output_json;  
-        }  
-        $files = $_FILES['arquivos'];  
-    } else {  
-        if (!isset($_FILES['arquivo']) || $_FILES['arquivo']['error'] === UPLOAD_ERR_NO_FILE) {  
-            $response['message'] = 'Nenhum arquivo foi enviado.';  
-            goto output_json;  
-        }  
-        // Converter para formato de array múltiplo  
-        $files = [  
-            'name' => [$_FILES['arquivo']['name']],  
-            'type' => [$_FILES['arquivo']['type']],  
-            'tmp_name' => [$_FILES['arquivo']['tmp_name']],  
-            'error' => [$_FILES['arquivo']['error']],  
-            'size' => [$_FILES['arquivo']['size']]  
-        ];  
-    }  
+    $fields = ['arquivos', 'arquivo']; // aceitamos ambos
+    foreach ($fields as $field) {
+        if (!isset($_FILES[$field])) continue;
+        $f = $_FILES[$field];
+
+        // Campo múltiplo
+        if (is_array($f['name'])) {
+            $count = count($f['name']);
+            for ($i=0; $i<$count; $i++) {
+                $files[] = [
+                    'name'     => $f['name'][$i],
+                    'type'     => $f['type'][$i],
+                    'tmp_name' => $f['tmp_name'][$i],
+                    'error'    => $f['error'][$i],
+                    'size'     => $f['size'][$i],
+                ];
+            }
+        } else {
+            // Campo simples
+            $files[] = [
+                'name'     => $f['name'],
+                'type'     => $f['type'],
+                'tmp_name' => $f['tmp_name'],
+                'error'    => $f['error'],
+                'size'     => $f['size'],
+            ];
+        }
+    }
+
+    // Remove entradas vazias/sem arquivo
+    $files = array_values(array_filter($files, function($x){
+        return isset($x['name']) && $x['name'] !== '' && isset($x['error']) && $x['error'] !== UPLOAD_ERR_NO_FILE;
+    }));
+
+    if (count($files) === 0) {
+        $response['message'] = 'Nenhum arquivo foi enviado.';
+        goto output_json;
+    }
 
     // Criar o diretório para os arquivos  
     $diretorio = "uploads/selo_" . $selo_id;  
@@ -122,17 +140,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mkdir($diretorio, 0755, true);  
     }  
 
-    $arquivos_totais = count($files['name']);  
+    $arquivos_totais = count($files);  
     $arquivos_processados = 0;  
     $imagens_total = 0;  
 
     // Processar cada arquivo  
-    for ($i = 0; $i < $arquivos_totais; $i++) {  
-        $nome_original = $files['name'][$i];  
-        $tipo = $files['type'][$i];  
-        $tmp_name = $files['tmp_name'][$i];  
-        $erro = $files['error'][$i];  
-        $tamanho = $files['size'][$i];  
+    foreach ($files as $idx => $file) {  
+        $nome_original = $file['name'];  
+        $tipo          = $file['type'];  
+        $tmp_name      = $file['tmp_name'];  
+        $erro          = $file['error'];  
+        $tamanho       = $file['size'];  
 
         // Verificar erro de upload  
         if ($erro !== UPLOAD_ERR_OK) {  
@@ -142,11 +160,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Validar arquivo  
         $arquivo_temp = [  
-            'name' => $nome_original,  
-            'type' => $tipo,  
+            'name'     => $nome_original,  
+            'type'     => $tipo,  
             'tmp_name' => $tmp_name,  
-            'error' => $erro,  
-            'size' => $tamanho  
+            'error'    => $erro,  
+            'size'     => $tamanho  
         ];  
 
         $validacao = validar_arquivo($arquivo_temp);  
@@ -156,14 +174,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }  
 
         // Preparar nome do arquivo  
-        $extensao = strtolower(pathinfo($nome_original, PATHINFO_EXTENSION));  
-        $nome_arquivo = uniqid() . '.' . $extensao;  
-        $caminho_completo = $diretorio . '/' . $nome_arquivo;  
+        $extensao        = strtolower(pathinfo($nome_original, PATHINFO_EXTENSION));  
+        $nome_arquivo    = uniqid() . '.' . $extensao;  
+        $caminho_completo= $diretorio . '/' . $nome_arquivo;  
 
         // Mover o arquivo  
         if (move_uploaded_file($tmp_name, $caminho_completo)) {  
-            $diretorio_imagens = null;  
-            $imagens_extraidas = [];  
+            $diretorio_imagens  = null;  
+            $imagens_extraidas  = [];  
 
             // Converter PDF para imagens  
             if ($extensao === 'pdf') {  
@@ -202,7 +220,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Registrar imagens extraídas  
                 if (!empty($imagens_extraidas)) {  
                     $stmt = $pdo->prepare("INSERT INTO imagens_anexo (anexo_id, caminho, ordem) VALUES (?, ?, ?)");  
-                    
                     foreach ($imagens_extraidas as $index => $imagem_path) {  
                         $stmt->execute([  
                             $anexo_id,  
@@ -231,9 +248,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             unlink($imagem_path);  
                         }  
                     }  
-                    
                     if (is_dir($diretorio_imagens)) {  
-                        rmdir($diretorio_imagens);  
+                        @rmdir($diretorio_imagens);  
                     }  
                 }  
                 

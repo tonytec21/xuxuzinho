@@ -146,7 +146,7 @@ include 'includes/header.php';
   border-radius: .75rem;
 }
 
-/* Dropzone highlight */
+/* Dropzone highlight (reutilizada nos modais) */
 .dropzone-container.highlight{
   outline: 2px dashed #2563eb;
   outline-offset: 6px;
@@ -235,7 +235,7 @@ table.dataTable tbody td{
     <?php elseif (!empty($mensagem) && $sucesso): ?>  
         <div class="alert alert-success"><?php echo $mensagem; ?></div>  
     <?php endif; ?>  
-    
+        
     <?php if (isset($_GET['success']) && $_GET['success'] == '1'): ?>  
         <div class="alert alert-success">Selo cadastrado com sucesso!</div>  
     <?php endif; ?>  
@@ -519,6 +519,7 @@ table.dataTable tbody td{
                                     <i data-feather="search" style="width:16px;height:16px;"></i>
                                 </button>
                             </div>
+                            <div class="form-text">No desktop, a busca também filtra a tabela em tempo real.</div>
                         </div>
                     </form>
                 </div>  
@@ -688,28 +689,61 @@ table.dataTable tbody td{
     <?php endif; ?>  
 </div>  
 
-<!-- Modal para cadastrar novo selo -->  
+<!-- Modal para cadastrar novo selo (AGORA SUPORTA MÚLTIPLOS COM ';' E ANEXOS COMUNS) -->  
 <div class="modal fade" id="novoSeloModal" tabindex="-1" aria-labelledby="novoSeloModalLabel" aria-hidden="true">  
-    <div class="modal-dialog">  
-        <div class="modal-content">  
+    <div class="modal-dialog modal-lg">  
+        <form id="formCadastrarSelosManual" class="modal-content" method="POST" action="cadastrar_selos_manual.php" enctype="multipart/form-data">  
             <div class="modal-header">  
-                <h5 class="modal-title" id="novoSeloModalLabel">Cadastrar Novo Selo</h5>  
+                <h5 class="modal-title" id="novoSeloModalLabel">Cadastrar Selos (manual)</h5>  
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>  
             </div>  
-            <form method="POST" action="selos.php">  
-                <div class="modal-body">  
-                    <div class="mb-3">  
-                        <label for="numero_selo" class="form-label">Número do Selo Eletrônico</label>  
-                        <input type="text" class="form-control" id="numero_selo" name="numero_selo" required>  
-                        <div class="form-text">Digite o número do selo eletrônico conforme consta no documento oficial.</div>  
-                    </div>  
-                </div>  
-                <div class="modal-footer">  
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>  
-                    <button type="submit" name="cadastrar_selo" class="btn btn-primary">Cadastrar</button>  
-                </div>  
-            </form>  
-        </div>  
+            <div class="modal-body">  
+                <div class="mb-3">  
+                    <label for="numerosSelos" class="form-label">Números dos Selos (separe por <strong>;</strong> — sem espaços)</label>  
+                    <input type="text" class="form-control" id="numerosSelos" name="numeros_selos" required
+                           placeholder="EX.: AVERBA031542UOUO...;AVERBA031542IG7OZV...;AVERBA0315429HZ43..." autocomplete="off">  
+                    <div class="form-text">
+                        Use <code>;</code> para separar. Espaços não são permitidos. Qualquer <strong>,</strong> digitada será substituída por <strong>;</strong>.
+                        <span id="contadorSelos" class="ms-2 fw-semibold"></span>
+                    </div>
+                </div>
+
+                <hr>
+                <div class="mb-2">
+                    <label class="form-label">Anexos em comum (opcional)</label>
+                    <div class="dropzone-container" id="dropzoneCadastro">
+                        <div class="dz-message text-center p-3">  
+                            <div class="upload-icon mb-2">
+                                <i data-feather="upload-cloud" style="width: 36px; height: 36px; color: #6c757d;"></i>
+                            </div>
+                            <div class="mb-1">Arraste e solte arquivos aqui</div>
+                            <div class="text-muted small">ou</div>
+                            <button class="btn btn-outline-primary btn-sm mt-2" type="button" id="btnBrowseCadastro">Selecionar Arquivos</button>
+                            <div class="mt-2 small text-muted">Formatos: PDF, JPG, JPEG, PNG (até 10MB por arquivo)</div>
+                        </div>
+                    </div>
+                    <input type="file" name="anexos_comuns[]" id="inputAnexosComuns" class="d-none" multiple accept=".pdf,.jpg,.jpeg,.png">
+                </div>
+                <div id="cadastroPreview" class="mb-3 d-none">
+                    <h6 class="mb-2">Arquivos selecionados</h6>
+                    <div id="cadFilePreviewList"></div>
+                </div>
+
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="cadAnexarExistentes" name="anexar_em_existentes">
+                    <label class="form-check-label" for="cadAnexarExistentes">
+                        Também anexar aos selos já existentes (ativos) listados acima
+                    </label>
+                </div>
+                <input type="hidden" name="cadastrar_selos_manual" value="1">
+            </div>  
+            <div class="modal-footer">  
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>  
+                <button type="submit" class="btn btn-primary" id="btnCadastrarSelos">
+                    <i data-feather="check-circle" class="me-1" style="width:16px;height:16px;"></i> Cadastrar
+                </button>  
+            </div>  
+        </form>  
     </div>  
 </div>  
 
@@ -740,16 +774,81 @@ table.dataTable tbody td{
           <label class="form-check-label" for="skipHeader">Pular primeira linha (cabeçalho)</label>
         </div>
 
+        <!-- ===== NOVO: anexos comuns ===== -->
+        <hr>
+        <div class="mb-2">
+          <label class="form-label">Anexos em comum (opcional)</label>
+          <input type="file" name="anexos_comuns[]" class="form-control" accept=".pdf,.jpg,.jpeg,.png" multiple>
+          <div class="form-text">
+            Esses arquivos serão <strong>copiados para cada selo processado</strong> (novos e restaurados).
+            Tamanho máximo: 10 MB por arquivo. Tipos: PDF, JPG, JPEG, PNG.
+          </div>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" id="applyExisting" name="anexar_em_existentes">
+          <label class="form-check-label" for="applyExisting">
+            Também anexar aos selos já existentes (ativos) presentes no arquivo
+          </label>
+        </div>
+
         <input type="hidden" name="importar_selos" value="1">
       </div>
 
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="submit" class="btn btn-success">
+        <button type="submit" class="btn btn-success" id="btnImportarSubmit">
           <i data-feather="check-circle" class="me-1" style="width:16px;height:16px;"></i> Importar
         </button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal de progresso da importação (XLSX) -->
+<div class="modal fade" id="importProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Importando selos...</h5>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-center mb-3">
+          <div class="spinner-border me-2" role="status" aria-hidden="true"></div>
+          <div id="importStageText" class="fw-semibold">Preparando...</div>
+        </div>
+        <div class="progress">
+          <div id="importProgressBar" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%">0%</div>
+        </div>
+        <div id="importDetailText" class="small text-muted mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btnImportCancel" class="btn btn-outline-secondary" disabled>Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- NOVO: Modal de progresso do cadastro manual -->
+<div class="modal fade" id="cadastroProgressModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cadastrando selos...</h5>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-center mb-3">
+          <div class="spinner-border me-2" role="status" aria-hidden="true"></div>
+          <div id="cadastroStageText" class="fw-semibold">Preparando...</div>
+        </div>
+        <div class="progress">
+          <div id="cadastroProgressBar" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%">0%</div>
+        </div>
+        <div id="cadastroDetailText" class="small text-muted mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="btnCadastroCancel" class="btn btn-outline-secondary" disabled>Cancelar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -933,155 +1032,169 @@ function dtLang(){
 
 /* ====== Código sem jQuery (pode rodar já) ====== */
 
-// Dropzone simples (apenas quando existir)
+// Dropzone do selo individual (de-duplicação + envio robusto)
 document.addEventListener('DOMContentLoaded', function(){  
   if (window.feather) feather.replace();
 
   const dropzone = document.getElementById('dropzoneUpload');  
-  if (!dropzone) return;
+  if (dropzone){
+    // input apenas para abrir o seletor (sem name, não vai no POST)
+    const fileInput        = document.createElement('input');  
+    fileInput.type         = 'file';  
+    fileInput.multiple     = true;  
+    fileInput.accept       = '.pdf,.jpg,.jpeg,.png';  
+    fileInput.style.display= 'none';  
+    document.body.appendChild(fileInput);  
 
-  const fileInput        = document.createElement('input');  
-  fileInput.type         = 'file';  
-  fileInput.multiple     = true;  
-  fileInput.name         = 'arquivos[]';  
-  fileInput.accept       = '.pdf,.jpg,.jpeg,.png';  
-  fileInput.style.display= 'none';  
-  fileInput.setAttribute('form','uploadForm');  
+    const uploadForm       = document.getElementById('uploadForm');  
+    const browseBtn        = document.querySelector('.browse-btn');  
+    const submitBtn        = document.getElementById('submitUpload');  
+    const previewContainer = document.getElementById('preview-container');  
+    const previewList      = document.getElementById('file-preview-list');  
 
-  const uploadForm       = document.getElementById('uploadForm');  
-  uploadForm.appendChild(fileInput);  
+    // cache + helpers
+    let selectedUploadFiles = []; // File[]
+    const validTypes = ['application/pdf','image/jpeg','image/jpg','image/png'];
+    const MAX = 10*1024*1024;
+    const sig = f => `${f.name}::${f.size}::${f.lastModified}`;
 
-  const browseBtn        = document.querySelector('.browse-btn');  
-  const submitBtn        = document.getElementById('submitUpload');  
-  const previewContainer = document.getElementById('preview-container');  
-  const previewList      = document.getElementById('file-preview-list');  
-
-  browseBtn?.addEventListener('click', () => fileInput.click());
-
-  ['dragenter','dragover','dragleave','drop'].forEach(evt => {
-    dropzone.addEventListener(evt, function(e){ e.preventDefault(); e.stopPropagation(); }, false);
-  });
-  ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, () => dropzone.classList.add('highlight'), false));
-  ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, () => dropzone.classList.remove('highlight'), false));
-
-  dropzone.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files), false);
-  fileInput.addEventListener('change', function(){ handleFiles(this.files); });
-
-  function handleFiles(files){
-    if (!files.length) return;
-
-    previewContainer.classList.remove('d-none');
-    submitBtn.disabled = false;
-
-    Array.from(files).forEach(file => {
-      const validTypes = ['application/pdf','image/jpeg','image/jpg','image/png'];
-      if (!validTypes.includes(file.type)) { showToast('Tipo de arquivo não suportado: '+file.name,'error'); return; }
-      if (file.size > 10*1024*1024)       { showToast('Arquivo muito grande: '+file.name,'error'); return; }
-      addFilePreview(file);
-    });
-  }
-
-  function addFilePreview(file){
-    const item = document.createElement('div');
-    item.className = 'file-preview-item d-flex align-items-center gap-2 border rounded p-2 mb-2';
-
-    let iconName = file.type === 'application/pdf' ? 'file-text' : (file.type.startsWith('image/') ? 'image' : 'file');
-    const fileSize = formatFileSize(file.size);
-
-    item.innerHTML = `
-      <div class="file-icon"><i data-feather="${iconName}" style="width:18px;height:18px;"></i></div>
-      <div class="file-info flex-fill">
-        <div class="file-name fw-semibold">${file.name}</div>
-        <div class="file-size small text-muted">${fileSize}</div>
-      </div>
-      <button type="button" class="btn btn-sm btn-outline-secondary file-remove" data-filename="${file.name}">
-        <i data-feather="x" style="width:16px;height:16px;"></i>
-      </button>
-    `;
-    previewList.appendChild(item);
-    if (window.feather) feather.replace();
-
-    item.querySelector('.file-remove').addEventListener('click', function(){
-      const newList = new DataTransfer();
-      Array.from(fileInput.files).forEach(f => { if (f.name !== this.dataset.filename) newList.items.add(f); });
-      fileInput.files = newList.files;
-      item.remove();
-      if (fileInput.files.length === 0){
+    function renderUploadPreview(){
+      previewList.innerHTML = '';
+      if (selectedUploadFiles.length === 0){
         previewContainer.classList.add('d-none');
-        submitBtn.disabled = true;
+        return;
       }
-    });
-  }
-
-  function formatFileSize(bytes){
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;  
-    const sizes = ['Bytes','KB','MB','GB'];  
-    const i = Math.floor(Math.log(bytes)/Math.log(k));  
-    return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
-  }
-
-  uploadForm.addEventListener('submit', function(e){
-    e.preventDefault();
-
-    if (fileInput.files.length === 0) {
-      Swal.fire('Erro', 'Selecione pelo menos um arquivo para enviar.', 'error');
-      return;
+      previewContainer.classList.remove('d-none');
+      selectedUploadFiles.forEach(file => {
+        const item = document.createElement('div');
+        item.className = 'file-preview-item d-flex align-items-center gap-2 border rounded p-2 mb-2';
+        const iconName = file.type === 'application/pdf' ? 'file-text' : (file.type.startsWith('image/') ? 'image' : 'file');
+        const fileSize = formatFileSize(file.size);
+        const signature = sig(file);
+        item.innerHTML = `
+          <div class="file-icon"><i data-feather="${iconName}" style="width:18px;height:18px;"></i></div>
+          <div class="file-info flex-fill">
+            <div class="file-name fw-semibold">${file.name}</div>
+            <div class="file-size small text-muted">${fileSize}</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary file-remove" data-sign="${signature}">
+            <i data-feather="x" style="width:16px;height:16px;"></i>
+          </button>
+        `;
+        previewList.appendChild(item);
+      });
+      if (window.feather) feather.replace();
+      previewList.querySelectorAll('.file-remove').forEach(btn=>{
+        btn.addEventListener('click', () => {
+          const sign = btn.getAttribute('data-sign');
+          selectedUploadFiles = selectedUploadFiles.filter(f => sig(f)!==sign);
+          submitBtn.disabled = selectedUploadFiles.length === 0;
+          renderUploadPreview();
+        });
+      });
     }
 
-    const progressContainer = document.getElementById('progressContainer');  
-    const progressBar       = document.getElementById('progressBar');  
-    const uploadStatus      = document.getElementById('uploadStatus');  
-
-    progressContainer.classList.remove('d-none');  
-    submitBtn.disabled = true;  
-
-    const formData = new FormData(this);  
-    const xhr = new XMLHttpRequest();  
-    xhr.open('POST', 'upload_anexo.php', true);  
-
-    xhr.upload.addEventListener('progress', function(e){
-      if (e.lengthComputable){
-        const pct = Math.round((e.loaded / e.total) * 100);
-        progressBar.style.width = pct + '%';
-        progressBar.textContent = pct + '%';
-        uploadStatus.textContent = `Enviando arquivos... ${formatFileSize(e.loaded)} de ${formatFileSize(e.total)}`;
+    function addUploadFiles(list){
+      const arr = Array.from(list || []);
+      let added = 0;
+      arr.forEach(file => {
+        if (!validTypes.includes(file.type)) { showToast('Tipo de arquivo não suportado: '+file.name,'error'); return; }
+        if (file.size > MAX) { showToast('Arquivo muito grande: '+file.name,'error'); return; }
+        if (!selectedUploadFiles.some(f => sig(f)===sig(file))) {
+          selectedUploadFiles.push(file);
+          added++;
+        }
+      });
+      if (added>0){
+        submitBtn.disabled = selectedUploadFiles.length === 0;
+        renderUploadPreview();
       }
+    }
+
+    function formatFileSize(bytes){
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024, sizes = ['Bytes','KB','MB','GB'];  
+      const i = Math.floor(Math.log(bytes)/Math.log(k));  
+      return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+sizes[i];
+    }
+
+    browseBtn?.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', function(){ addUploadFiles(this.files); this.value=''; });
+
+    ['dragenter','dragover','dragleave','drop'].forEach(evt => {
+      dropzone.addEventListener(evt, function(e){ e.preventDefault(); e.stopPropagation(); }, false);
     });
+    ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, () => dropzone.classList.add('highlight'), false));
+    ['dragleave','drop'].forEach(evt => dropzone.addEventListener(evt, () => dropzone.classList.remove('highlight'), false));
+    dropzone.addEventListener('drop', (e) => addUploadFiles(e.dataTransfer.files), false);
 
-    xhr.onload = function(){
-      uploadStatus.textContent = 'Upload finalizado';
-      if (xhr.status === 200){
-        let response;
-        try { response = JSON.parse(xhr.responseText); }
-        catch(e){
-          console.error('Resposta inválida:', xhr.responseText);
-          Swal.fire('Erro', 'Resposta inválida do servidor.', 'error');
-          submitBtn.disabled = false;
-          return;
-        }
+    uploadForm.addEventListener('submit', function(e){
+      e.preventDefault();
 
-        if (response.success){
-          Swal.fire({ icon:'success', title:'Sucesso!', text: response.message || 'Upload realizado com sucesso!', timer:1500, showConfirmButton:false })
-              .then(() => { window.location.reload(); });
-        } else {
-          Swal.fire('Erro no Upload', response.message || 'Falha ao enviar arquivos.', 'error');
-          submitBtn.disabled = false;
-        }
-      } else {
-        Swal.fire('Erro', 'Falha na comunicação com o servidor. Código: ' + xhr.status, 'error');
-        submitBtn.disabled = false;
+      if (selectedUploadFiles.length === 0) {
+        Swal.fire('Erro', 'Selecione pelo menos um arquivo para enviar.', 'error');
+        return;
       }
-    };
 
-    xhr.onerror = function(){
-      Swal.fire('Erro', 'Falha na conexão com o servidor.', 'error');
-      submitBtn.disabled = false;
-      uploadStatus.textContent = 'Upload falhou';
-    };
+      const progressContainer = document.getElementById('progressContainer');  
+      const progressBar       = document.getElementById('progressBar');  
+      const uploadStatus      = document.getElementById('uploadStatus');  
+      const seloId            = uploadForm.querySelector('input[name="selo_id"]').value;
 
-    xhr.send(formData);
-  });
+      progressContainer.classList.remove('d-none');  
+      submitBtn.disabled = true;  
+
+      // monta FormData manualmente (evita campo vazio no $_FILES)
+      const formData = new FormData();  
+      formData.append('selo_id', seloId);
+      selectedUploadFiles.forEach(f => formData.append('arquivos[]', f, f.name));
+
+      const xhr = new XMLHttpRequest();  
+      xhr.open('POST', 'upload_anexo.php', true);  
+
+      xhr.upload.addEventListener('progress', function(e){
+        if (e.lengthComputable){
+          const pct = Math.round((e.loaded / e.total) * 100);
+          progressBar.style.width = pct + '%';
+          progressBar.textContent = pct + '%';
+          uploadStatus.textContent = `Enviando arquivos... ${formatFileSize(e.loaded)} de ${formatFileSize(e.total)}`;
+        }
+      });
+
+      xhr.onload = function(){
+        uploadStatus.textContent = 'Upload finalizado';
+        if (xhr.status === 200){
+          let response;
+          try { response = JSON.parse(xhr.responseText); }
+          catch(e){
+            console.error('Resposta inválida:', xhr.responseText);
+            Swal.fire('Erro', 'Resposta inválida do servidor.', 'error');
+            submitBtn.disabled = false;
+            return;
+          }
+
+          if (response.success){
+            Swal.fire({ icon:'success', title:'Sucesso!', text: response.message || 'Upload realizado com sucesso!', timer:1500, showConfirmButton:false })
+                .then(() => { window.location.reload(); });
+          } else {
+            Swal.fire('Erro no Upload', response.message || 'Falha ao enviar arquivos.', 'error');
+            submitBtn.disabled = false;
+          }
+        } else {
+          Swal.fire('Erro', 'Falha na comunicação com o servidor. Código: ' + xhr.status, 'error');
+          submitBtn.disabled = false;
+        }
+      };
+
+      xhr.onerror = function(){
+        Swal.fire('Erro', 'Falha na conexão com o servidor.', 'error');
+        submitBtn.disabled = false;
+        uploadStatus.textContent = 'Upload falhou';
+      };
+
+      xhr.send(formData);
+    });
+  }
 });
 
 /* Toast helper */
@@ -1162,6 +1275,367 @@ function filtrarCards(texto){
     card.style.display = numero.includes(query) ? '' : 'none';
   });
 }
+
+/* === Envio AJAX com barra de progresso para Importar XLSX === */
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('formImportarSelos');
+  if (!form) return;
+
+  const progressModalEl = document.getElementById('importProgressModal');
+  const progressModal = new bootstrap.Modal(progressModalEl, { backdrop:'static', keyboard:false });
+  const bar = document.getElementById('importProgressBar');
+  const stage = document.getElementById('importStageText');
+  const detail = document.getElementById('importDetailText');
+  const btnCancel = document.getElementById('btnImportCancel');
+  const btnSubmit = document.getElementById('btnImportarSubmit');
+
+  let currentXHR = null;
+
+  function setProgress(pct, text){
+    bar.style.width = pct + '%';
+    bar.textContent = pct + '%';
+    if (typeof text === 'string') stage.textContent = text;
+  }
+  function setIndeterminate(on){
+    bar.classList.toggle('progress-bar-striped', on);
+    bar.classList.toggle('progress-bar-animated', on);
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    const fd = new FormData(form);
+    const xhr = new XMLHttpRequest();
+    currentXHR = xhr;
+
+    // UI inicial
+    setProgress(0, 'Iniciando envio...');
+    setIndeterminate(false);
+    detail.textContent = '';
+    btnCancel.disabled = false;
+    btnSubmit.disabled = true;
+
+    progressModal.show();
+
+    xhr.open('POST', form.getAttribute('action'), true);
+    xhr.setRequestHeader('X-Requested-With','XMLHttpRequest'); // força retorno JSON
+
+    xhr.upload.onprogress = function(ev){
+      if (ev.lengthComputable){
+        const pct = Math.round((ev.loaded/ev.total)*100);
+        setProgress(Math.min(pct, 90), 'Enviando arquivos...');
+        detail.textContent = `Enviado ${Math.round(ev.loaded/1024)} KB de ${Math.round(ev.total/1024)} KB`;
+      }
+    };
+    xhr.upload.onload = function(){
+      setProgress(90, 'Upload concluído. Processando planilha e anexos...');
+      setIndeterminate(true);
+      detail.textContent = 'Isso pode levar alguns minutos dependendo da quantidade de selos e anexos.';
+    };
+    xhr.onloadstart = function(){
+      setProgress(5, 'Preparando envio...');
+    };
+
+    xhr.onreadystatechange = function(){
+      if (xhr.readyState === 4){
+        setIndeterminate(false);
+        btnCancel.disabled = true;
+        btnSubmit.disabled = false;
+
+        if (xhr.status === 200){
+          let resp;
+          try { resp = JSON.parse(xhr.responseText); }
+          catch(err){
+            progressModal.hide();
+            Swal.fire('Erro', 'Resposta inválida do servidor.', 'error');
+            return;
+          }
+
+          setProgress(100, 'Finalizando...');
+          progressModal.hide();
+
+          if (resp.success){
+            const msg = (resp.message || 'Importação concluída com sucesso!');
+            Swal.fire({icon:'success', title:'Concluído!', html: `<div class="text-start">${msg}</div>`, confirmButtonText:'OK'})
+              .then(()=>{ window.location.reload(); });
+          } else {
+            const errs = (resp.errors && resp.errors.length)
+              ? `<div class="alert alert-warning mt-2" style="max-height:200px;overflow:auto;"><div class="small">${resp.errors.map(e=>`• ${e}`).join('<br>')}</div></div>`
+              : '';
+            Swal.fire({icon:'error', title:'Falha na importação', html: `<div class="text-start">${resp.message||'Tente novamente.'}${errs}</div>`});
+          }
+        } else {
+          progressModal.hide();
+          Swal.fire('Erro', `Falha na comunicação com o servidor (HTTP ${xhr.status}).`, 'error');
+        }
+      }
+    };
+
+    xhr.onerror = function(){
+      setIndeterminate(false);
+      btnCancel.disabled = true;
+      btnSubmit.disabled = false;
+      progressModal.hide();
+      Swal.fire('Erro', 'Falha na conexão durante a importação.', 'error');
+    };
+
+    xhr.ontimeout = function(){
+      setIndeterminate(false);
+      btnCancel.disabled = true;
+      btnSubmit.disabled = false;
+      progressModal.hide();
+      Swal.fire('Erro', 'Tempo de importação excedido.', 'error');
+    };
+
+    xhr.send(fd);
+  });
+
+  btnCancel.addEventListener('click', function(){
+    if (currentXHR){
+      try { currentXHR.abort(); } catch(e){}
+      currentXHR = null;
+    }
+    btnCancel.disabled = true;
+    setIndeterminate(false);
+    stage.textContent = 'Cancelado pelo usuário';
+    bar.classList.remove('bg-success');
+    bar.classList.add('bg-secondary');
+    progressModal.hide();
+    Swal.fire('Importação cancelada', 'Nenhum dado foi alterado.', 'info');
+  });
+});
+
+/* === Cadastro manual com validação, dropzone e barra de progresso === */
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('formCadastrarSelosManual');
+  if (!form) return;
+
+  const inputNumeros = document.getElementById('numerosSelos');
+  const contadorSelos = document.getElementById('contadorSelos');
+
+  function normalizarEntrada(v){
+    v = (v || '').replace(/,/g, ';'); // vírgula -> ;
+    v = v.replace(/\s+/g, '');       // remove espaços
+    v = v.replace(/;{2,}/g, ';');    // colapsa ;;;
+    return v;
+  }
+  function validar(v){
+    if (!v) return false;
+    return /^[A-Za-z0-9]+(?:;[A-Za-z0-9]+)*$/.test(v);
+  }
+  function atualizarContador(v){
+    const q = v ? v.split(';').filter(Boolean).length : 0;
+    contadorSelos.textContent = q ? `(${q} selo${q>1?'s':''})` : '';
+  }
+
+  inputNumeros.addEventListener('input', function(){
+    const norm = normalizarEntrada(this.value);
+    if (this.value !== norm) this.value = norm;
+    const ok = validar(this.value);
+    this.classList.toggle('is-invalid', !ok && this.value.length>0);
+    atualizarContador(this.value);
+    document.getElementById('btnCadastrarSelos').disabled = !ok;
+  });
+
+  // Dropzone para anexos comuns (COM de-duplicação)
+  const dz = document.getElementById('dropzoneCadastro');
+  const inputFiles = document.getElementById('inputAnexosComuns');
+  const btnBrowse = document.getElementById('btnBrowseCadastro');
+  const prevWrap = document.getElementById('cadastroPreview');
+  const prevList = document.getElementById('cadFilePreviewList');
+
+  let selectedFiles = []; // File[]
+  const validTypes = ['application/pdf','image/jpeg','image/jpg','image/png'];
+  const MAX = 10*1024*1024;
+  const sig = f => `${f.name}::${f.size}::${f.lastModified}`;
+
+  btnBrowse.addEventListener('click', () => inputFiles.click());
+
+  ['dragenter','dragover','dragleave','drop'].forEach(evt => {
+    dz.addEventListener(evt, function(e){ e.preventDefault(); e.stopPropagation(); }, false);
+  });
+  ['dragenter','dragover'].forEach(evt => dz.addEventListener(evt, () => dz.classList.add('highlight'), false));
+  ['dragleave','drop'].forEach(evt => dz.addEventListener(evt, () => dz.classList.remove('highlight'), false));
+  dz.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+  inputFiles.addEventListener('change', e => { addFiles(e.target.files); e.target.value=''; });
+
+  function addFiles(files){
+    const arr = Array.from(files || []);
+    let added = 0;
+    arr.forEach(file => {
+      const okType = validTypes.includes(file.type);
+      if (!okType) { showToast('Tipo não suportado: '+file.name,'error'); return; }
+      if (file.size > MAX) { showToast('Arquivo excede 10MB: '+file.name,'error'); return; }
+      if (!selectedFiles.some(f => sig(f)===sig(file))) {
+        selectedFiles.push(file);
+        added++;
+      }
+    });
+    if (added>0) syncInputFromCache();
+  }
+
+  function syncInputFromCache(){
+    const dt = new DataTransfer();
+    selectedFiles.forEach(f => dt.items.add(f));
+    inputFiles.files = dt.files;
+    renderPreview();
+  }
+
+  function renderPreview(){
+    prevList.innerHTML = '';
+    if (!selectedFiles.length){ prevWrap.classList.add('d-none'); return; }
+    prevWrap.classList.remove('d-none');
+    selectedFiles.forEach(file => {
+      const item = document.createElement('div');
+      item.className = 'file-preview-item d-flex align-items-center gap-2 border rounded p-2 mb-2';
+      const iconName = file.type === 'application/pdf' ? 'file-text' : (file.type.startsWith('image/') ? 'image' : 'file');
+      const size = (file.size/1024/1024).toFixed(2)+' MB';
+      const signature = sig(file);
+      item.innerHTML = `
+        <div class="file-icon"><i data-feather="${iconName}" style="width:18px;height:18px;"></i></div>
+        <div class="file-info flex-fill">
+          <div class="file-name fw-semibold">${file.name}</div>
+          <div class="file-size small text-muted">${size}</div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary file-remove" data-sign="${signature}"><i data-feather="x" style="width:16px;height:16px;"></i></button>
+      `;
+      prevList.appendChild(item);
+    });
+    if (window.feather) feather.replace();
+    prevList.querySelectorAll('.file-remove').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const sign = btn.getAttribute('data-sign');
+        selectedFiles = selectedFiles.filter(f => sig(f)!==sign);
+        syncInputFromCache();
+      });
+    });
+  }
+
+  // Barra de progresso (cadastro manual)
+  const progModalEl = document.getElementById('cadastroProgressModal');
+  const progModal   = new bootstrap.Modal(progModalEl, { backdrop:'static', keyboard:false });
+  const bar         = document.getElementById('cadastroProgressBar');
+  const stage       = document.getElementById('cadastroStageText');
+  const detail      = document.getElementById('cadastroDetailText');
+  const btnCancel   = document.getElementById('btnCadastroCancel');
+  const btnSubmit   = document.getElementById('btnCadastrarSelos');
+
+  let currentXHR = null;
+  function setProgress(p, t){
+    bar.style.width = p + '%';
+    bar.textContent = p + '%';
+    if (typeof t === 'string') stage.textContent = t;
+  }
+  function setIndeterminate(on){
+    bar.classList.toggle('progress-bar-striped', on);
+    bar.classList.toggle('progress-bar-animated', on);
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    const norm = inputNumeros.value = (inputNumeros.value || '')
+      .replace(/,/g,';').replace(/\s+/g,'').replace(/;{2,}/g,';').replace(/^;|;$/g,'');
+    if (!/^[A-Za-z0-9]+(?:;[A-Za-z0-9]+)*$/.test(norm)) {
+      inputNumeros.classList.add('is-invalid');
+      inputNumeros.reportValidity?.();
+      return;
+    }
+
+    // Monta o FormData e garante anexos comuns do cache (sem depender de input.files programático)
+    const fd = new FormData(form);
+    if (selectedFiles.length) {
+      try { fd.delete('anexos_comuns[]'); } catch (e) {}
+      selectedFiles.forEach(f => fd.append('anexos_comuns[]', f, f.name));
+    }
+
+    const xhr = new XMLHttpRequest();
+    currentXHR = xhr;
+
+    setProgress(0, 'Iniciando envio...');
+    setIndeterminate(false);
+    detail.textContent = '';
+    btnCancel.disabled = false;
+    btnSubmit.disabled = true;
+    progModal.show();
+
+    xhr.open('POST', form.getAttribute('action'), true);
+    xhr.setRequestHeader('X-Requested-With','XMLHttpRequest');
+
+    xhr.upload.onprogress = function(ev){
+      if (ev.lengthComputable){
+        const pct = Math.round((ev.loaded/ev.total)*100);
+        setProgress(Math.min(pct, 90), 'Enviando dados...');
+        detail.textContent = `Enviado ${Math.round(ev.loaded/1024)} KB de ${Math.round(ev.total/1024)} KB`;
+      }
+    };
+    xhr.upload.onload = function(){
+      setProgress(90, 'Upload concluído. Processando selos e anexos...');
+      setIndeterminate(true);
+      detail.textContent = 'Aguarde enquanto criamos/restauramos os selos e copiamos os anexos.';
+    };
+    xhr.onloadstart = function(){ setProgress(5, 'Preparando...'); };
+
+    xhr.onreadystatechange = function(){
+      if (xhr.readyState === 4){
+        setIndeterminate(false);
+        btnCancel.disabled = true;
+        btnSubmit.disabled = false;
+
+        if (xhr.status === 200){
+          let resp;
+          try { resp = JSON.parse(xhr.responseText); }
+          catch(err){
+            progModal.hide();
+            Swal.fire('Erro', 'Resposta inválida do servidor.', 'error');
+            return;
+          }
+
+          setProgress(100, 'Finalizando...');
+          progModal.hide();
+
+          if (resp.success){
+            const msg = resp.message || 'Cadastro concluído com sucesso!';
+            const errs = (resp.errors && resp.errors.length)
+              ? `<div class="alert alert-warning mt-2" style="max-height:200px;overflow:auto;"><div class="small">${resp.errors.map(e=>`• ${e}`).join('<br>')}</div></div>` : '';
+            Swal.fire({icon:'success', title:'Concluído!', html:`<div class="text-start">${msg}${errs}</div>`})
+              .then(()=> location.reload());
+          } else {
+            const errs = (resp.errors && resp.errors.length)
+              ? `<div class="alert alert-warning mt-2" style="max-height:200px;overflow:auto;"><div class="small">${resp.errors.map(e=>`• ${e}`).join('<br>')}</div></div>` : '';
+            Swal.fire({icon:'error', title:'Falha no cadastro', html:`<div class="text-start">${resp.message||'Tente novamente.'}${errs}</div>`});
+          }
+        } else {
+          progModal.hide();
+          Swal.fire('Erro', `Falha na comunicação com o servidor (HTTP ${xhr.status}).`, 'error');
+        }
+      }
+    };
+
+    xhr.onerror = function(){
+      setIndeterminate(false);
+      btnCancel.disabled = true;
+      btnSubmit.disabled = false;
+      progModal.hide();
+      Swal.fire('Erro', 'Falha na conexão durante o cadastro.', 'error');
+    };
+
+    xhr.send(fd);
+  });
+
+  btnCancel.addEventListener('click', function(){
+    if (currentXHR){
+      try { currentXHR.abort(); } catch(e){}
+      currentXHR = null;
+    }
+    btnCancel.disabled = true;
+    setIndeterminate(false);
+    stage.textContent = 'Cancelado pelo usuário';
+    bar.classList.remove('bg-success');
+    bar.classList.add('bg-secondary');
+    progModal.hide();
+    Swal.fire('Cadastro cancelado', 'Nenhum dado foi alterado.', 'info');
+  });
+});
 
 /* Garante que DataTables carregue só após jQuery final da página */
 window.addEventListener('load', function(){ 
