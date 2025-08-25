@@ -14,7 +14,37 @@ date_default_timezone_set('America/Sao_Paulo');
 require_once 'includes/auth_check.php';  
 require_once 'includes/db_connection.php';  
 require_once 'includes/functions.php';  
-require_once 'includes/parse_crc.php';          // helper de extração  
+require_once 'includes/parse_crc.php';         
+
+/* ------------------------------------------------------------------
+   0.A MIGRAÇÕES LIGEIRAS – garantir tabela de log de status
+   (executa sem ruído; se já existir, CREATE IF NOT EXISTS não altera)
+------------------------------------------------------------------*/
+try {
+    $sqlCreateLogTable = <<<'SQL'
+CREATE TABLE IF NOT EXISTS comunicacoes_crc_status_log (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  comunicacao_id  INT NOT NULL,
+  status_anterior ENUM('pendente','anotada','recusada','excluido') DEFAULT NULL,
+  novo_status     ENUM('pendente','anotada','recusada','excluido') NOT NULL,
+  usuario_id      INT NULL,
+  usuario_nome    VARCHAR(255) NOT NULL,
+  ip              VARCHAR(45) DEFAULT NULL,
+  user_agent      VARCHAR(255) DEFAULT NULL,
+  criado_em       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_comunicacao_id (comunicacao_id),
+  INDEX idx_criado_em (criado_em),
+  CONSTRAINT fk_crc_statuslog_crc
+    FOREIGN KEY (comunicacao_id) REFERENCES comunicacoes_crc(id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+SQL;
+
+    $pdo->exec($sqlCreateLogTable);
+} catch (Exception $e) {
+    // Não interrompe a página; apenas registra para diagnóstico
+    error_log('Falha ao criar tabela comunicacoes_crc_status_log: ' . $e->getMessage());
+}
 
 /* ------------------------------------------------------------------  
    0. CADASTRO RÁPIDO – POST  
@@ -61,27 +91,76 @@ if (isset($_POST['cadastrar_comunicacao']) && !empty($_POST['texto_integral'])) 
     }  
 }  
 
-/* ------------------------------------------------------------------  
-   ATUALIZAR STATUS - POST AJAX  
-------------------------------------------------------------------*/  
-if (isset($_POST['atualizar_status']) && isset($_POST['id']) && isset($_POST['status'])) {  
-    $id = intval($_POST['id']);  
-    $status = $_POST['status'];  
-    
-    if (!in_array($status, ['pendente', 'anotada', 'recusada', 'excluido'])) {  
-        echo json_encode(['success' => false, 'message' => 'Status inválido']);  
-        exit;  
-    }  
-    
-    try {  
-        $stmt = $pdo->prepare("UPDATE comunicacoes_crc SET status = ? WHERE id = ?");  
-        $result = $stmt->execute([$status, $id]);  
-        echo json_encode(['success' => $result]);  
-    } catch (Exception $e) {  
-        echo json_encode(['success' => false, 'message' => $e->getMessage()]);  
-    }  
-    exit;  
-}  
+/* ------------------------------------------------------------------
+   ATUALIZAR STATUS - POST AJAX (com histórico e usuário)
+------------------------------------------------------------------*/
+if (isset($_POST['atualizar_status']) && isset($_POST['id']) && isset($_POST['status'])) {
+    $id     = intval($_POST['id']);
+    $status = $_POST['status'];
+
+    if (!in_array($status, ['pendente', 'anotada', 'recusada', 'excluido'])) {
+        echo json_encode(['success' => false, 'message' => 'Status inválido']);
+        exit;
+    }
+
+    // Quem está alterando (ajuste os nomes das chaves de sessão se necessário)
+    $usuario_id   = $_SESSION['usuario_id'] ?? null;
+    $usuario_nome = $_SESSION['nome'] ?? ($_SESSION['username'] ?? 'Usuário');
+
+    $ip  = $_SERVER['REMOTE_ADDR']      ?? null;
+    $ua  = $_SERVER['HTTP_USER_AGENT']  ?? null;
+
+    try {
+        // 1) Obter status anterior
+        $stmt = $pdo->prepare("SELECT status FROM comunicacoes_crc WHERE id = ? LIMIT 1");
+        $stmt->execute([$id]);
+        $status_anterior = $stmt->fetchColumn();
+
+        if ($status_anterior === false) {
+            echo json_encode(['success' => false, 'message' => 'Registro não encontrado']);
+            exit;
+        }
+
+        // 2) Transação para garantir atomicidade (UPDATE + INSERT no log)
+        $pdo->beginTransaction();
+
+        // 2.1) Atualiza o registro principal
+        $up = $pdo->prepare("UPDATE comunicacoes_crc 
+                                SET status = ?, atualizado_em = NOW() 
+                              WHERE id = ?");
+        $okUpdate = $up->execute([$status, $id]);
+
+        // 2.2) Insere no log
+        $ins = $pdo->prepare("
+            INSERT INTO comunicacoes_crc_status_log 
+                (comunicacao_id, status_anterior, novo_status, usuario_id, usuario_nome, ip, user_agent)
+            VALUES
+                (?,              ?,               ?,           ?,          ?,            ?,  ?)
+        ");
+        $okLog = $ins->execute([
+            $id, $status_anterior, $status, $usuario_id, $usuario_nome, $ip, $ua
+        ]);
+
+        if ($okUpdate && $okLog) {
+            $pdo->commit();
+            echo json_encode([
+                'success'      => true,
+                'novo_status'  => $status,
+                'anterior'     => $status_anterior,
+                'usuario_nome' => $usuario_nome,
+                'quando'       => date('Y-m-d H:i:s')
+            ]);
+        } else {
+            $pdo->rollBack();
+            echo json_encode(['success' => false, 'message' => 'Não foi possível concluir a atualização']);
+        }
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+    exit;
+}
+
 
 /* ------------------------------------------------------------------  
    1. FILTROS  
